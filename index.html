@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EchoMind Pro - AI Writing Engine by MetalMindTech</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #0f172a, #020617);
+      color: white;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+      text-align: center;
+      padding: 80px 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+    }
+
+    /* MetalMindTech Forge Insignia */
+    #metalmindtech-insignia {
+      filter: drop-shadow(0 0 8px rgba(94, 234, 212, 0.6));
+      transition: transform 0.8s ease, filter 0.8s ease;
+      cursor: pointer;
+      animation: forgeShimmer 8s linear infinite, forgePulse 6s ease-in-out infinite;
+      margin-bottom: 2rem;
+    }
+
+    #metalmindtech-insignia:hover {
+      transform: scale(1.08);
+      filter: drop-shadow(0 0 16px rgba(124, 58, 237, 0.9));
+    }
+
+    @keyframes forgeShimmer {
+      0% { filter: drop-shadow(0 0 8px rgba(94, 234, 212, 0.6)) hue-rotate(0deg); }
+      50% { filter: drop-shadow(0 0 12px rgba(124, 58, 237, 0.7)) hue-rotate(180deg); }
+      100% { filter: drop-shadow(0 0 8px rgba(94, 234, 212, 0.6)) hue-rotate(360deg); }
+    }
+
+    @keyframes forgePulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.06); opacity: 0.9; }
+    }
+
+    h1 {
+      font-size: 3rem;
+      background: linear-gradient(90deg, #5EEAD4, #7C3AED, #3B82F6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1rem;
+      animation: fadeInDown 0.6s ease;
+    }
+
+    .tagline {
+      font-size: 1.3rem;
+      color: #cbd5e1;
+      margin-bottom: 3rem;
+      opacity: 0.9;
+      animation: fadeIn 0.8s ease;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin: 3rem 0;
+      text-align: left;
+    }
+
+    .feature {
+      background: rgba(94, 234, 212, 0.05);
+      border: 1px solid rgba(94, 234, 212, 0.2);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .feature:hover {
+      background: rgba(94, 234, 212, 0.1);
+      border-color: rgba(94, 234, 212, 0.4);
+      transform: translateY(-4px);
+    }
+
+    .feature h3 {
+      color: #5eead4;
+      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+    }
+
+    .feature p {
+      color: #94a3b8;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 3rem;
+    }
+
+    .btn {
+      padding: 14px 32px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: linear-gradient(90deg, #5eead4, #3b82f6);
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+    }
+
+    .btn-secondary {
+      background: rgba(94, 234, 212, 0.1);
+      border: 1px solid rgba(94, 234, 212, 0.3);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(94, 234, 212, 0.2);
+      border-color: rgba(94, 234, 212, 0.5);
+    }
+
+    footer {
+      margin-top: 4rem;
+      padding-top: 2rem;
+      border-top: 1px solid rgba(94, 234, 212, 0.2);
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 0.9; }
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- MetalMindTech Forge Seal -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="180" height="54" id="metalmindtech-insignia">
+      <defs>
+        <linearGradient id="forgeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#5EEAD4"/>
+          <stop offset="50%" stop-color="#7C3AED"/>
+          <stop offset="100%" stop-color="#3B82F6"/>
+        </linearGradient>
+      </defs>
+      <circle cx="30" cy="30" r="24" fill="none" stroke="url(#forgeGradient)" stroke-width="4"/>
+      <path d="M30 10 L38 30 L30 50 L22 30 Z" fill="url(#forgeGradient)" opacity="0.8"/>
+      <text x="60" y="36" fill="url(#forgeGradient)" font-family="Poppins, sans-serif" font-weight="600" font-size="20">
+        MetalMindTech
+      </text>
+    </svg>
+
+    <h1>🧿 EchoMind Pro</h1>
+    <p class="tagline">Chrome Extension + Stripe-powered AI writing engine</p>
+
+    <div class="features">
+      <div class="feature">
+        <h3>✨ Instant Summarization</h3>
+        <p>Highlight any text and get AI-powered summaries in seconds</p>
+      </div>
+      <div class="feature">
+        <h3>💡 Smart Explanations</h3>
+        <p>Understand complex concepts with simple, clear explanations</p>
+      </div>
+      <div class="feature">
+        <h3>💾 Memory Vault</h3>
+        <p>Save and search all your insights locally with full privacy</p>
+      </div>
+      <div class="feature">
+        <h3>⚡ Pro Features</h3>
+        <p>Unlimited AI requests, advanced analysis, and priority support</p>
+      </div>
+    </div>
+
+    <div class="cta-buttons">
+      <a href="https://github.com/techshare101/echomind-pro-launch" class="btn btn-primary" target="_blank">
+        View on GitHub
+      </a>
+      <a href="/pricing.html" class="btn btn-secondary">
+        See Pricing
+      </a>
+    </div>
+
+    <footer>
+      <p>© 2025 MetalMindTech • Built by Kesarel × Kojo</p>
+      <p style="margin-top: 0.5rem; opacity: 0.7;">Forged with 🔥 in the AI revolution</p>
+    </footer>
+  </div>
+</body>
+</html>
