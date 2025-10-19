@@ -15,15 +15,27 @@ const stripeWebhookSecret = defineSecret("STRIPE_WEBHOOK_SECRET");
 const stripePriceMonthly = defineSecret("STRIPE_PRICE_ID_MONTHLY");
 const stripePriceAnnual = defineSecret("STRIPE_PRICE_ID_ANNUAL");
 
+// 🔍 Runtime verification (logs on function cold start)
+console.log("🔍 Stripe key loaded:", process.env.STRIPE_SECRET_KEY ? "✅ present" : "❌ missing");
+console.log("🔍 Webhook secret loaded:", process.env.STRIPE_WEBHOOK_SECRET ? "✅ present" : "❌ missing");
+console.log("🔍 Monthly price ID loaded:", process.env.STRIPE_PRICE_ID_MONTHLY ? "✅ present" : "❌ missing");
+console.log("🔍 Annual price ID loaded:", process.env.STRIPE_PRICE_ID_ANNUAL ? "✅ present" : "❌ missing");
+
 // Stripe webhook handler
 exports.stripeWebhook = onRequest(
     {
       timeoutSeconds: 60,
       memory: "256MiB",
       region: "us-central1",
-      secrets: [stripeSecretKey, stripeWebhookSecret],
+      secrets: [stripeSecretKey, stripeWebhookSecret, stripePriceMonthly, stripePriceAnnual],
     },
     async (req, res) => {
+  // 🔍 Runtime verification for webhook (forces secret attachment)
+  console.log("🔍 Webhook - Stripe key loaded:", process.env.STRIPE_SECRET_KEY ? "✅ present" : "❌ missing");
+  console.log("🔍 Webhook - Webhook secret loaded:", process.env.STRIPE_WEBHOOK_SECRET ? "✅ present" : "❌ missing");
+  console.log("🔍 Webhook - Monthly price ID loaded:", process.env.STRIPE_PRICE_ID_MONTHLY ? "✅ present" : "❌ missing");
+  console.log("🔍 Webhook - Annual price ID loaded:", process.env.STRIPE_PRICE_ID_ANNUAL ? "✅ present" : "❌ missing");
+  
   // Initialize Stripe with the secret value and API version
   const stripe = new Stripe(stripeSecretKey.value(), {
     apiVersion: "2024-12-18.acacia",
@@ -78,13 +90,18 @@ exports.stripeWebhook = onRequest(
 
     case "checkout.session.completed": {
       const session = event.data.object;
+      const plan = session.metadata?.plan || "monthly"; // Get plan from metadata
+      
       await db.collection("subscriptions").doc(session.id).set({
         customer: session.customer,
         email: session.customer_email,
         status: "active",
+        plan: plan, // Store plan type (monthly/annual)
         createdAt: admin.firestore.Timestamp.now(),
       });
-      console.log("✅ Checkout session completed:", session.id);
+      
+      console.log(`✅ Checkout session completed: ${session.id} (${plan})`);
+      console.log(`🔥 Pro ${plan} activated for: ${session.customer_email}`);
       break;
     }
 
@@ -200,13 +217,17 @@ exports.createCheckoutSession = onRequest(
           ? stripePriceAnnual.value()
           : stripePriceMonthly.value();
 
+        // Environment-agnostic URLs (works locally, Firebase, Vercel)
+        const successUrl = process.env.SUCCESS_URL || process.env.LOCAL_SUCCESS_URL || "https://echomind-ai.vercel.app/success.html";
+        const cancelUrl = process.env.CANCEL_URL || process.env.LOCAL_CANCEL_URL || "https://echomind-ai.vercel.app/cancel.html";
+
         // Create checkout session
         const session = await stripe.checkout.sessions.create({
           mode: "subscription",
           payment_method_types: ["card"],
           line_items: [{price: priceId, quantity: 1}],
-          success_url: "https://echomind-ai.vercel.app/success.html?session_id={CHECKOUT_SESSION_ID}",
-          cancel_url: "https://echomind-ai.vercel.app/cancel.html",
+          success_url: successUrl + "?session_id={CHECKOUT_SESSION_ID}",
+          cancel_url: cancelUrl,
           metadata: {plan: plan},
         });
 

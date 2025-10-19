@@ -1,19 +1,27 @@
-# 🧠 EchoMind
+# 🧿 EchoMind Pro
 
-**Your private AI mentor for every webpage**
+**Chrome Extension + Stripe-powered AI writing engine by MetalMindTech**
 
-EchoMind is a Chrome extension that transforms any web page into an interactive learning experience using Chrome's built-in AI APIs. Summarize, explain, and save insights — all offline and completely private.
+EchoMind Pro is a premium Chrome extension that transforms any web page into an interactive AI-powered workspace. Featuring instant summarization, smart explanations, and a permanent Memory Vault — with seamless Stripe-powered Pro upgrades and instant activation.
 
-![EchoMind Banner](https://via.placeholder.com/800x400/667eea/ffffff?text=EchoMind)
+![EchoMind Pro](https://via.placeholder.com/800x400/5eead4/0f172a?text=EchoMind+Pro+%7C+MetalMindTech)
 
 ## 🌟 Features
 
+### **Free Tier**
 - **✨ Instant Summarization** - Highlight any text and get AI-powered summaries
 - **💡 Smart Explanations** - Ask for simple explanations and practical examples
 - **📝 Text Rewriting** - Simplify complex content or change tone
 - **💾 Memory Vault** - Save and search all your insights locally
 - **🔒 100% Private** - All processing happens on-device using Chrome's built-in AI
-- **🌐 Works Offline** - No internet required after initial setup
+
+### **Pro Tier** 🌟
+- **⚡ Unlimited AI Requests** - No rate limits
+- **🎯 Advanced Context Analysis** - Deeper insights
+- **💎 Priority Support** - Get help faster
+- **🔄 Export & Sync** - Save insights across devices
+- **🎊 Instant Activation** - Pro unlocks immediately after payment
+- **🧿 Holographic Forge Seal** - Exclusive MetalMindTech branding
 
 ## 🚀 Quick Start
 
@@ -79,51 +87,129 @@ EchoMind requires Chrome's experimental AI features:
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: React 18 + TypeScript
-- **Styling**: TailwindCSS + Custom Cosmic Theme
-- **Build**: Vite
-- **AI**: Chrome Built-in AI APIs
+### **Frontend**
+- **React 18** + TypeScript
+- **TailwindCSS** + Custom Forge Theme
+- **Vite** - Lightning-fast builds
+- **Lucide React** - Beautiful icons
+
+### **AI & Processing**
+- **Chrome Built-in AI APIs**
   - Summarization API
   - Prompt API (Language Model)
   - Rewriter API
-- **Storage**: Chrome Storage API
-- **Icons**: Lucide React
+- **Hybrid Fallback** - Works with or without built-in AI
+
+### **Backend & Payments**
+- **Firebase Functions** - Serverless backend
+- **Stripe** - Payment processing
+  - Checkout Sessions
+  - Webhooks
+  - Subscription management
+- **Firestore** - User subscription database
+
+### **Deployment**
+- **Vercel** - Success/cancel pages
+- **Firebase Hosting** - Optional hosting
+- **Chrome Web Store** - Extension distribution
+
+### **Storage**
+- **Chrome Storage API** - Local data
+- **localStorage** - Pro status caching
+- **Firestore** - Subscription sync
 
 ## 📁 Project Structure
 
 ```
 echomind/
 ├── src/
-│   ├── popup/              # React popup UI
-│   │   ├── App.tsx         # Main app component
-│   │   └── main.tsx        # Entry point
-│   ├── components/         # Reusable components
-│   │   ├── InsightCard.tsx
-│   │   └── ActionPanel.tsx
-│   ├── utils/              # AI utilities
-│   │   ├── aiSummarizer.ts
-│   │   ├── aiPrompt.ts
-│   │   ├── aiRewriter.ts
-│   │   └── storage.ts
-│   ├── types/              # TypeScript definitions
-│   ├── background.ts       # Service worker
-│   ├── content.ts          # Content script
-│   └── styles/             # Global styles
+│   ├── popup/              # Extension popup UI
+│   │   ├── popup.html      # Popup HTML
+│   │   ├── popup.js        # Popup logic + Pro features
+│   │   └── popup.css       # Forge theme styling
+│   ├── background.ts       # Service worker + context menus
+│   ├── content.ts          # Content script + Shadow DOM
+│   ├── vault.html          # Memory Vault (permanent tab)
+│   ├── vault.js            # Vault logic (search/export)
+│   └── vault.css           # Vault glassmorphism theme
+├── functions/              # Firebase Cloud Functions
+│   ├── index.js            # All backend functions
+│   │   ├── createCheckoutSession
+│   │   ├── stripeWebhook
+│   │   ├── checkSubscription
+│   │   └── verifySessionInstant
+│   └── package.json
+├── success.html            # Payment success page
+├── cancel.html             # Payment cancel page
+├── pricing.html            # Pricing page
 ├── manifest.json           # Extension manifest
 ├── vite.config.ts          # Build configuration
+├── vercel.json             # Vercel deployment config
 └── package.json
 ```
 
+## 💎 Pro Features Architecture
+
+### **Instant Unlock System**
+1. User clicks "Upgrade Monthly" ($4.99) or "Upgrade Annual" ($49.99)
+2. `createCheckoutSession` function creates Stripe checkout
+3. User completes payment with test card: `4242 4242 4242 4242`
+4. Stripe redirects to `success.html?session_id=cs_test_...`
+5. `verifySessionInstant` function validates payment
+6. Firestore updated: `status: "active"`
+7. `localStorage.isProActive = "true"`
+8. 🎊 Confetti launches on success page
+9. 🧿 "Welcome to Forge Mode" appears
+10. User reopens extension
+11. ✨ PRO badge pulses
+12. 🎊 Popup confetti celebration
+13. 💎 "Welcome to Forge Mode" (one-time)
+14. Full Pro features unlocked!
+
+### **Subscription Management**
+- **Auto-verification** - Checks subscription on every popup open
+- **Toast notifications** - "✨ EchoMind Pro activated"
+- **localStorage caching** - Fast Pro detection
+- **Webhook sync** - Stripe events update Firestore
+- **Instant activation** - No waiting for webhooks
+
 ## 🎨 Design Philosophy
 
-EchoMind follows the **Ark Aesthetic** — a cosmic, elegant interface that emphasizes:
-- **Privacy-first** - No data leaves your device
-- **Clarity** - Clean, intuitive interactions
+EchoMind Pro follows the **Forge Aesthetic** — a holographic, premium interface that emphasizes:
+- **Privacy-first** - No data leaves your device (AI processing)
+- **Instant gratification** - Zero-delay Pro activation
+- **Visual celebration** - Confetti + breathing seal animations
+- **Premium branding** - MetalMindTech holographic insignia
 - **Performance** - Instant responses with local AI
-- **Accessibility** - Works entirely offline
+- **Seamless payments** - One-click Stripe checkout
+
+## 🧿 MetalMindTech Forge Branding
+
+### **Holographic Seal**
+- **Shimmer animation** - 8-second hue rotation (emerald → violet → blue)
+- **Breathing pulse** - 6-second gentle scale animation
+- **Hover effect** - Scales to 1.08x with violet glow
+- **Living presence** - Feels like a breathing AI entity
+
+### **"Welcome to Forge Mode"**
+- **Success page** - Fades in after confetti, pulses forever
+- **Popup (one-time)** - Appears on first Pro activation
+- **Gradient text** - Emerald → Violet → Blue
+- **Text glow** - Pulsing emerald/violet shadow
+
+### **Color Palette**
+- **Emerald** (#5EEAD4) - Growth, prosperity, AI
+- **Violet** (#7C3AED) - Creativity, innovation, premium
+- **Blue** (#3B82F6) - Trust, technology, intelligence
+- **Dark** (#0F172A) - Professional, focused background
 
 ## 🔮 Roadmap
 
+- [x] Stripe payment integration
+- [x] Instant Pro unlock system
+- [x] Confetti celebrations
+- [x] Holographic Forge seal
+- [x] Auto subscription verification
 - [ ] Voice mode (text-to-speech for insights)
 - [ ] Translation support
 - [ ] Export insights to Markdown
@@ -151,14 +237,61 @@ MIT License - see [LICENSE](LICENSE) for details
 - Built for the [Chrome Built-in AI Challenge](https://googlechromeai.devpost.com/)
 - Powered by Chrome's experimental AI APIs
 - Inspired by the vision of local-first, privacy-preserving AI
+- Stripe integration for seamless payments
+- Firebase for serverless backend
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/echomind/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/echomind/discussions)
+- **Issues**: [GitHub Issues](https://github.com/techshare101/echomind-pro-launch/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/techshare101/echomind-pro-launch/discussions)
+- **Email**: support@metalmindtech.com
+
+## 🚀 Deployment
+
+### **Extension**
+```bash
+npm run build
+# Load dist folder in chrome://extensions
+```
+
+### **Backend (Firebase)**
+```bash
+cd functions
+npm install
+firebase deploy --only functions
+```
+
+### **Frontend (Vercel)**
+```bash
+vercel --prod
+```
+
+## 💰 Revenue Model
+
+- **Free Tier**: Basic AI features
+- **Pro Monthly**: $4.99/month
+- **Pro Annual**: $49.99/year (save 17%)
+
+**Test Card**: `4242 4242 4242 4242` (any future date, any CVC)
 
 ---
 
-**EchoMind** — Learn privately. Think locally. 🧠✨
+<div align="center">
 
-Made with 🔥 by [Your Name]
+## 🧿 **EchoMind Pro**
+
+**Learn privately. Think locally. Upgrade instantly.** 🧠✨
+
+### © 2025 **MetalMindTech**
+
+**Built by Kesarel × Kojo**
+
+*Forged with 🔥 in the AI revolution*
+
+---
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](LICENSE)
+[![Stripe](https://img.shields.io/badge/Payments-Stripe-violet.svg)](https://stripe.com)
+[![Firebase](https://img.shields.io/badge/Backend-Firebase-blue.svg)](https://firebase.google.com)
+
+</div>
