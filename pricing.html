@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EchoMind Pro - Pricing</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: white;
+    }
+
+    .container {
+      max-width: 1200px;
+      width: 100%;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .header h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #5EEAD4, #3B82F6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+    }
+
+    .header p {
+      font-size: 1.25rem;
+      color: #94a3b8;
+    }
+
+    .pricing-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .pricing-card {
+      background: rgba(30, 41, 59, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(94, 234, 212, 0.2);
+      border-radius: 20px;
+      padding: 40px;
+      position: relative;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .pricing-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(94, 234, 212, 0.5);
+      box-shadow: 0 20px 40px rgba(94, 234, 212, 0.2);
+    }
+
+    .pricing-card.popular {
+      border-color: #5EEAD4;
+      box-shadow: 0 10px 30px rgba(94, 234, 212, 0.3);
+    }
+
+    .popular-badge {
+      position: absolute;
+      top: -15px;
+      right: 30px;
+      background: linear-gradient(90deg, #5EEAD4, #3B82F6);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    .plan-name {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #5EEAD4;
+    }
+
+    .plan-price {
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .plan-price span {
+      font-size: 1.25rem;
+      color: #94a3b8;
+      font-weight: 400;
+    }
+
+    .plan-savings {
+      color: #10b981;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .plan-description {
+      color: #94a3b8;
+      margin-bottom: 30px;
+      line-height: 1.6;
+    }
+
+    .features {
+      list-style: none;
+      margin-bottom: 30px;
+    }
+
+    .features li {
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(94, 234, 212, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .features li:last-child {
+      border-bottom: none;
+    }
+
+    .checkmark {
+      color: #5EEAD4;
+      font-size: 1.25rem;
+    }
+
+    .upgrade-btn {
+      width: 100%;
+      background: linear-gradient(90deg, #5EEAD4, #3B82F6);
+      border: none;
+      color: white;
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 1.125rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .upgrade-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.6);
+    }
+
+    .upgrade-btn:active {
+      transform: translateY(0);
+    }
+
+    .loading {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 2rem;
+      }
+
+      .pricing-cards {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🚀 Upgrade to EchoMind Pro</h1>
+      <p>Unlock unlimited AI-powered summaries and advanced features</p>
+    </div>
+
+    <div class="pricing-cards">
+      <!-- Monthly Plan -->
+      <div class="pricing-card" onclick="selectPlan('monthly')">
+        <div class="plan-name">Monthly</div>
+        <div class="plan-price">$4.99<span>/month</span></div>
+        <div class="plan-description">Perfect for trying out EchoMind Pro</div>
+        
+        <ul class="features">
+          <li><span class="checkmark">✓</span> Unlimited AI summaries</li>
+          <li><span class="checkmark">✓</span> Advanced context analysis</li>
+          <li><span class="checkmark">✓</span> Memory vault storage</li>
+          <li><span class="checkmark">✓</span> Priority support</li>
+          <li><span class="checkmark">✓</span> Export & sync features</li>
+        </ul>
+
+        <button class="upgrade-btn" id="monthly-btn">
+          Choose Monthly
+        </button>
+      </div>
+
+      <!-- Annual Plan (Popular) -->
+      <div class="pricing-card popular" onclick="selectPlan('annual')">
+        <div class="popular-badge">🔥 BEST VALUE</div>
+        <div class="plan-name">Annual</div>
+        <div class="plan-price">$49.99<span>/year</span></div>
+        <div class="plan-savings">💎 Billed annually — save 17%!</div>
+        <div class="plan-description">Best value for committed users</div>
+        
+        <ul class="features">
+          <li><span class="checkmark">✓</span> Everything in Monthly</li>
+          <li><span class="checkmark">✓</span> 2 months free</li>
+          <li><span class="checkmark">✓</span> Early access to features</li>
+          <li><span class="checkmark">✓</span> Premium support</li>
+          <li><span class="checkmark">✓</span> Lifetime updates</li>
+        </ul>
+
+        <button class="upgrade-btn" id="annual-btn">
+          Choose Annual
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Your Firebase Cloud Function endpoint
+    const CHECKOUT_ENDPOINT = "https://us-central1-echomind-pro-launch.cloudfunctions.net/createCheckoutSession";
+
+    async function selectPlan(plan) {
+      const button = document.getElementById(`${plan}-btn`);
+      const originalText = button.textContent;
+      
+      try {
+        // Show loading state
+        button.textContent = "Loading...";
+        button.classList.add("loading");
+        button.disabled = true;
+
+        // Call your Firebase function with plan parameter
+        const response = await fetch(`${CHECKOUT_ENDPOINT}?plan=${plan}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        const data = await response.json();
+
+        if (data.url) {
+          // Redirect to Stripe Checkout
+          window.location.href = data.url;
+        } else {
+          throw new Error("No checkout URL returned");
+        }
+      } catch (error) {
+        console.error("Error creating checkout session:", error);
+        alert("Failed to create checkout session. Please try again.");
+        
+        // Reset button
+        button.textContent = originalText;
+        button.classList.remove("loading");
+        button.disabled = false;
+      }
+    }
+
+    // Optional: Add keyboard shortcuts
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "1") selectPlan("monthly");
+      if (e.key === "2") selectPlan("annual");
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EchoMind</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h2>🧠 EchoMind</h2>
+      <div id="proStatus" class="pro-status hidden">✨ PRO</div>
+      <button id="settingsBtn" class="icon-btn" title="Settings">⚙️</button>
+    </header>
+
+    <!-- Upgrade to Pro Section -->
+    <div id="proBox" class="pro-box">
+      <div class="pro-badge">✨ PRO</div>
+      <h3>Upgrade to EchoMind Pro</h3>
+      <p class="pro-description">Unlock unlimited AI summaries & rewrites</p>
+      
+      <div class="pro-features">
+        <div class="feature">✓ Unlimited summaries</div>
+        <div class="feature">✓ Advanced AI models</div>
+        <div class="feature">✓ Priority support</div>
+      </div>
+
+      <div class="pro-buttons">
+        <button id="upgradeMonthly" class="upgrade-btn monthly">
+          <span class="price">$4.99</span>
+          <span class="period">/month</span>
+        </button>
+        <button id="upgradeAnnual" class="upgrade-btn annual">
+          <span class="badge-save">Save 17%</span>
+          <span class="price">$49.99</span>
+          <span class="period">/year</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="summarizeBtn">⚡ Summarize</button>
+      <button id="explainBtn">💡 Explain</button>
+      <button id="proofreadBtn">✏️ Proofread</button>
+      <button id="translateBtn">🌍 Translate</button>
+    </div>
+    <div class="actions">
+      <button id="vaultBtn">📦 Vault</button>
+      <button id="clearVaultBtn">🧹 Clear</button>
+      <button id="openDashboardBtn">🪟 Dashboard</button>
+    </div>
+
+    <div id="status" class="status info">Ready</div>
+    <div id="summaryBox" class="summaryBox"></div>
+
+    <!-- Vault Container with Filters -->
+    <div id="vaultContainer" class="hidden">
+      <div class="vault-header">
+        <h3>📦 Vault Archive</h3>
+        <button id="backToMainBtn" class="icon-btn" title="Back">←</button>
+      </div>
+      <div id="vaultFilters" class="vault-filters">
+        <button data-filter="all" class="filter active">All</button>
+        <button data-filter="summarize" class="filter">Summaries</button>
+        <button data-filter="explain" class="filter">Explanations</button>
+        <button data-filter="proofread" class="filter">Proofreads</button>
+        <button data-filter="translate" class="filter">Translations</button>
+      </div>
+      <div id="vaultEntries" class="vault-entries"></div>
+    </div>
+  </div>
+
+  <!-- hidden settings panel -->
+  <div id="settingsPanel" class="settings hidden">
+    <h3>Settings</h3>
+    <label>
+      <input type="checkbox" id="aiToggle" /> Enable Cloud AI
+    </label>
+    <textarea id="apiKeyInput" placeholder="Enter OpenAI API key here"></textarea>
+    <button id="saveSettingsBtn">💾 Save Settings</button>
+  </div>
+
+  <!-- MetalMindTech Forge Seal -->
+  <div id="forge-seal">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="140" height="42" id="metalmindtech-insignia">
+      <defs>
+        <linearGradient id="forgeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#5EEAD4"/>
+          <stop offset="50%" stop-color="#7C3AED"/>
+          <stop offset="100%" stop-color="#3B82F6"/>
+        </linearGradient>
+      </defs>
+      <circle cx="30" cy="30" r="24" fill="none" stroke="url(#forgeGradient)" stroke-width="4"/>
+      <path d="M30 10 L38 30 L30 50 L22 30 Z" fill="url(#forgeGradient)" opacity="0.8"/>
+      <text x="60" y="36" fill="url(#forgeGradient)" font-family="Poppins, sans-serif" font-weight="600" font-size="20">
+        MetalMindTech
+      </text>
+    </svg>
+    
+    <!-- Forge Mode Welcome (one-time) -->
+    <div id="forge-welcome-popup" class="hidden">Welcome to <span class="forge-highlight">Forge Mode</span></div>
+  </div>
+
+  <!-- Forge Insignia Footer -->
+  <div id="forge-footer">
+    <span>© 2025 <strong>MetalMindTech</strong> • Built by <strong>Kesarel × Kojo</strong></span>
+  </div>
+
+  <script type="module" src="./popup.js"></script>
+</body>
+</html>

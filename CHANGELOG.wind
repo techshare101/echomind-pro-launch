@@ -1,0 +1,119 @@
+# EchoMind - Windsurf Version History
+
+## v0.2.6 – Self-Healing Background Worker + Build System Fix
+**Date:** October 15, 2025
+
+### Fixed
+- ❌ **Critical bug**: `content.css` not being copied to dist, causing Chrome extension load failure
+- 🔧 Updated Vite config to use `vite-plugin-static-copy` for reliable static file handling
+- ✅ Added `@types/node` for proper TypeScript support in build scripts
+- 🛡️ **Background worker crashes** - Added comprehensive error guards and recovery
+
+### Added
+
+#### 🧠 Self-Healing Background Service Worker
+- **Resilient background worker** with auto-recovery capabilities:
+  - API safety checks prevent crashes
+  - Lifecycle event listeners (activate, install, startup)
+  - Periodic heartbeat (every 5 minutes) to keep worker alive
+  - Global error handlers and unhandled rejection guards
+  - Context menu crash protection
+- **Health monitor hook** (`useBackgroundHealth`):
+  - Pings background worker every 30 seconds
+  - Auto-detects suspended workers
+  - Attempts automatic recovery via `chrome.runtime.reload()`
+  - Retries before declaring offline
+- **Live health status display** in popup footer:
+  - ✅ Stable (green) - Worker responsive
+  - ⚡ Recovering (yellow, pulsing) - Auto-recovery in progress
+  - ❌ Offline (red) - Recovery failed
+
+#### 🔍 Build Validation System
+- **Auto-validator script** (`npm run validate`) - Automatically checks:
+  - All critical files present (manifest, JS, CSS, HTML)
+  - Optional files (icons)
+  - No dev-only files in dist
+  - Manifest.json validity
+  - Total package size
+- 📦 Validator now runs automatically after `npm run build:prod`
+- 🎯 Better error messages when builds fail
+
+### Technical Details
+- Installed `vite-plugin-static-copy` for reliable file copying
+- Vite now automatically copies:
+  - `manifest.json` → `dist/manifest.json`
+  - `src/content.css` → `dist/content.css`
+  - `public/*` → `dist/*` (icons, etc.)
+- Background worker uses `self.onerror` and `unhandledrejection` event listeners
+- Health monitor uses exponential backoff and retry logic
+- Build validation prevents broken extensions from being packaged
+- Extension now survives Chrome suspensions, restarts, and crashes
+
+---
+
+## v0.2.5 – Production Export Pipeline + Phase III Smart Reload
+**Date:** October 15, 2025
+
+### Added
+
+#### 📦 Production Export Pipeline
+- **Automated build system** for Chrome Web Store distribution
+- New production scripts:
+  - `npm run clean` - Clean dist folder
+  - `npm run build:prod` - Production build with verification
+  - `npm run package` - Create distribution .zip
+- Production verification checks:
+  - ✅ All required files present
+  - ✅ No dev-only files in dist
+  - ✅ Manifest.json copied correctly
+- Automated packaging: Creates `echomind-v[version].zip` ready for distribution
+- `EXPORT.md` - Complete export and distribution documentation
+
+#### 🧠 Phase III Smart Reload System
+- **Smart reload detection** - Automatically detects if Chrome Canary is running
+- **Intelligent reload workflow**:
+  - If Chrome is running → Instructions for manual reload + window activation
+  - If Chrome is closed → Auto-launch with extension loaded
+- New development scripts:
+  - `npm run forge:reload` - Full rebuild + new Chrome window
+  - `npm run forge:hot` - Smart rebuild + intelligent reload
+- **Windows enhancement**: Automatically brings Chrome to foreground
+- Clear feedback on extension build location and reload status
+
+### Technical Details
+- Process detection via `tasklist` (Windows) / `pgrep` (macOS/Linux)
+- Multi-path Chrome Canary detection for reliability
+- Auto-opens DevTools when launching fresh Chrome instance
+- Non-blocking Chrome launch for faster workflow
+
+---
+
+## v0.2.4 – Proofreader API Integration (Gemini Nano)
+**Date:** October 15, 2025
+
+### Added
+- ✅ Proofreader API type definitions in `chrome-ai.d.ts`
+- ✅ New `aiProofreader.ts` utility module
+  - `proofreadText()` function with language parameter support
+  - `checkProofreaderAvailability()` for API status checks
+  - Comprehensive error handling and fallback messages
+- ✅ "Proofread" button in text selection menu (content script)
+- ✅ Proofreading action handler in popup App.tsx
+- ✅ Auto-save proofread results to Memory Vault
+
+### Technical Details
+- Uses `window.Proofreader` API (not `window.ai.proofreader`)
+- Defaults to English (`'en'`) output language
+- Proper resource cleanup with `destroy()` method
+- Classified as `'rewrite'` type insights
+
+### Requirements
+- Chrome Canary with `chrome://flags/#optimization-guide-on-device-model` enabled
+- Gemini Nano model downloaded and ready
+
+---
+
+## Previous Releases
+- v0.2.3 – Base EchoMind with Summarizer, Rewriter, Translator APIs
+- v0.2.0 – Memory Vault export functionality
+- v0.1.0 – Initial release

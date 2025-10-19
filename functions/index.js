@@ -1,0 +1,276 @@
+const {onRequest} = require("firebase-functions/v2/https");
+const {defineSecret} = require("firebase-functions/params");
+const admin = require("firebase-admin");
+const Stripe = require("stripe");
+
+// Load environment variables from .env file (for local development)
+require("dotenv").config();
+
+admin.initializeApp();
+const db = admin.firestore();
+
+// Define secrets for 2nd-gen functions
+const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
+const stripeWebhookSecret = defineSecret("STRIPE_WEBHOOK_SECRET");
+const stripePriceMonthly = defineSecret("STRIPE_PRICE_ID_MONTHLY");
+const stripePriceAnnual = defineSecret("STRIPE_PRICE_ID_ANNUAL");
+
+// Stripe webhook handler
+exports.stripeWebhook = onRequest(
+    {
+      timeoutSeconds: 60,
+      memory: "256MiB",
+      region: "us-central1",
+      secrets: [stripeSecretKey, stripeWebhookSecret],
+    },
+    async (req, res) => {
+  // Initialize Stripe with the secret value and API version
+  const stripe = new Stripe(stripeSecretKey.value(), {
+    apiVersion: "2024-12-18.acacia",
+  });
+  
+  const sig = req.headers["stripe-signature"];
+  if (!sig) {
+    console.error("❌ Missing Stripe signature");
+    return res.status(400).send("Missing Stripe signature");
+  }
+  
+  const endpointSecret = stripeWebhookSecret.value();
+
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(
+      req.rawBody,
+      sig,
+      endpointSecret
+    );
+  } catch (err) {
+    console.error("⚠️  Webhook signature verification failed:", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  console.log("✅ Received event:", event.type);
+
+  switch (event.type) {
+    case "payment_intent.succeeded": {
+      const paymentIntent = event.data.object;
+      const customerEmail = paymentIntent.receipt_email;
+      console.log("✅ Payment succeeded for:", customerEmail);
+
+      if (customerEmail) {
+        const userRef = db
+            .collection("user_subscription_status")
+            .doc(customerEmail);
+        await userRef.set(
+            {
+              status: "active",
+              lastUpdated: admin.firestore.Timestamp.now(),
+            },
+            {merge: true},
+        );
+        console.log(
+            "🔥 Updated Firestore subscription status for",
+            customerEmail,
+        );
+      }
+      break;
+    }
+
+    case "checkout.session.completed": {
+      const session = event.data.object;
+      await db.collection("subscriptions").doc(session.id).set({
+        customer: session.customer,
+        email: session.customer_email,
+        status: "active",
+        createdAt: admin.firestore.Timestamp.now(),
+      });
+      console.log("✅ Checkout session completed:", session.id);
+      break;
+    }
+
+    case "invoice.payment_succeeded": {
+      const invoice = event.data.object;
+      await db.collection("subscriptions").doc(invoice.subscription).update({
+        lastPayment: admin.firestore.Timestamp.now(),
+      });
+      console.log("💸 Payment succeeded for:", invoice.subscription);
+      break;
+    }
+
+    case "customer.subscription.deleted": {
+      const subscription = event.data.object;
+      await db.collection("subscriptions").doc(subscription.id).update({
+        status: "canceled",
+        canceledAt: admin.firestore.Timestamp.now(),
+      });
+      console.log("🛑 Subscription canceled:", subscription.id);
+      break;
+    }
+
+    default:
+      console.log("ℹ️  Unhandled event type:", event.type);
+  }
+
+  res.status(200).send("Success");
+    },
+);
+
+// ✅ Verify user subscription status
+exports.checkSubscription = onRequest(
+    {
+      timeoutSeconds: 60,
+      memory: "256MiB",
+      region: "us-central1",
+      cors: true,
+      secrets: [stripeSecretKey],
+    },
+    async (req, res) => {
+  try {
+    // Allow CORS for Chrome Extension calls
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "GET, POST");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") {
+      return res.status(204).send("");
+    }
+
+    // 🔐 Get UID or email from query parameters
+    const uid = req.query.uid;
+    const email = req.query.email;
+
+    if (!uid && !email) {
+      return res.status(400).json({error: "Missing uid or email"});
+    }
+
+    let userDoc;
+    if (uid) {
+      userDoc = await db
+          .collection("user_subscription_status")
+          .doc(uid)
+          .get();
+    } else if (email) {
+      userDoc = await db
+          .collection("user_subscription_status")
+          .doc(email)
+          .get();
+    }
+
+    if (!userDoc.exists) {
+      return res.status(200).json({
+        status: "free",
+        message: "No active subscription found.",
+      });
+    }
+
+    const data = userDoc.data();
+    const status = data.status || "free";
+
+    console.log("✅ Subscription check for", uid || email, ":", status);
+    return res.status(200).json({
+      status: status,
+      last_updated: data.last_updated || null,
+    });
+  } catch (error) {
+    console.error("❌ Error checking subscription:", error);
+    return res.status(500).json({error: error.message});
+  }
+    },
+);
+
+// 💳 Create Stripe Checkout Session for "Upgrade to Pro" (Multi-tier)
+exports.createCheckoutSession = onRequest(
+    {
+      secrets: [stripeSecretKey, stripePriceMonthly, stripePriceAnnual],
+      cors: true,
+      region: "us-central1",
+    },
+    async (req, res) => {
+      try {
+        // Initialize Stripe
+        const stripe = new Stripe(stripeSecretKey.value(), {
+          apiVersion: "2024-12-18.acacia",
+        });
+
+        // Get plan type from query parameter (default to monthly)
+        const plan = req.query.plan || "monthly";
+
+        // Select price based on plan
+        const priceId = plan === "annual"
+          ? stripePriceAnnual.value()
+          : stripePriceMonthly.value();
+
+        // Create checkout session
+        const session = await stripe.checkout.sessions.create({
+          mode: "subscription",
+          payment_method_types: ["card"],
+          line_items: [{price: priceId, quantity: 1}],
+          success_url: "https://echomind-ai.vercel.app/success.html?session_id={CHECKOUT_SESSION_ID}",
+          cancel_url: "https://echomind-ai.vercel.app/cancel.html",
+          metadata: {plan: plan},
+        });
+
+        console.log(`✅ Checkout session created for ${plan}:`, session.id);
+        return res.status(200).json({url: session.url, plan: plan, sessionId: session.id});
+      } catch (error) {
+        console.error("❌ Error creating checkout session:", error);
+        return res.status(500).json({error: error.message});
+      }
+    },
+);
+
+// ⚡ Instant Session Verification (for immediate Pro unlock)
+exports.verifySessionInstant = onRequest(
+    {
+      secrets: [stripeSecretKey],
+      cors: true,
+      region: "us-central1",
+    },
+    async (req, res) => {
+      try {
+        const sessionId = req.query.session_id;
+
+        if (!sessionId) {
+          return res.status(400).json({error: "Missing session_id"});
+        }
+
+        // Initialize Stripe
+        const stripe = new Stripe(stripeSecretKey.value(), {
+          apiVersion: "2024-12-18.acacia",
+        });
+
+        // Retrieve the checkout session
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+        console.log("🔍 Verifying session:", sessionId, "Payment status:", session.payment_status);
+
+        if (session.payment_status === "paid") {
+          const email = session.customer_details?.email || session.customer_email || "publicuser@echomind.ai";
+          const plan = session.metadata?.plan || "monthly";
+
+          // Instantly mark as active in Firestore
+          await db.collection("user_subscription_status").doc(email).set({
+            status: "active",
+            plan: plan,
+            updatedAt: admin.firestore.Timestamp.now(),
+            instantUnlock: true,
+            sessionId: sessionId,
+          }, {merge: true});
+
+          console.log("⚡ Instant unlock activated for:", email);
+
+          return res.status(200).json({
+            status: "active",
+            email: email,
+            plan: plan,
+          });
+        }
+
+        console.log("⏳ Payment not yet completed");
+        return res.status(200).json({status: "pending"});
+      } catch (error) {
+        console.error("❌ Instant verify error:", error);
+        return res.status(500).json({error: error.message});
+      }
+    },
+);

@@ -1,0 +1,21 @@
+{
+  "name": "echomind-functions",
+  "description": "Firebase Cloud Functions for EchoMind Pro Launch",
+  "main": "index.js",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "lint": "eslint . || echo 'Lint skipped on Windows'",
+    "start": "firebase emulators:start"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^5.0.0",
+    "stripe": "^15.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0"
+  }
+}

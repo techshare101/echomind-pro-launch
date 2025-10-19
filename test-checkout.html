@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Checkout - EchoMind</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: white;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      color: #5EEAD4;
+      margin-bottom: 30px;
+    }
+    
+    .test-section {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(94, 234, 212, 0.2);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    
+    button {
+      background: linear-gradient(90deg, #5EEAD4, #3B82F6);
+      border: none;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 10px 10px 10px 0;
+      transition: transform 0.2s;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+    }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .result {
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    
+    .success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid #10b981;
+      color: #10b981;
+    }
+    
+    .error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid #ef4444;
+      color: #ef4444;
+    }
+    
+    .info {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid #3b82f6;
+      color: #3b82f6;
+    }
+    
+    code {
+      background: rgba(94, 234, 212, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #5EEAD4;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 EchoMind Checkout Test Suite</h1>
+  
+  <div class="test-section">
+    <h2>1️⃣ Test Monthly Checkout</h2>
+    <p>Click to test the monthly subscription checkout flow ($4.99/month)</p>
+    <button onclick="testCheckout('monthly')">Test Monthly Plan</button>
+    <div id="monthly-result"></div>
+  </div>
+  
+  <div class="test-section">
+    <h2>2️⃣ Test Annual Checkout</h2>
+    <p>Click to test the annual subscription checkout flow ($49.99/year)</p>
+    <button onclick="testCheckout('annual')">Test Annual Plan</button>
+    <div id="annual-result"></div>
+  </div>
+  
+  <div class="test-section">
+    <h2>3️⃣ Direct Redirect Test</h2>
+    <p>These buttons will redirect you directly to Stripe Checkout</p>
+    <button onclick="redirectToCheckout('monthly')">Go to Monthly Checkout</button>
+    <button onclick="redirectToCheckout('annual')">Go to Annual Checkout</button>
+  </div>
+  
+  <div class="test-section">
+    <h2>📋 Test Card Information</h2>
+    <div class="info result">
+<strong>Stripe Test Cards:</strong>
+
+✅ Success: 4242 4242 4242 4242
+❌ Decline: 4000 0000 0000 0002
+🔐 3D Secure: 4000 0025 0000 3155
+
+Expiry: Any future date (e.g., 12/34)
+CVC: Any 3 digits (e.g., 123)
+ZIP: Any 5 digits (e.g., 12345)
+    </div>
+  </div>
+  
+  <div class="test-section">
+    <h2>🔗 Configuration</h2>
+    <div class="info result">
+<strong>Endpoint:</strong>
+https://us-central1-echomind-pro-launch.cloudfunctions.net/createCheckoutSession
+
+<strong>Prices:</strong>
+Monthly: price_1SJLwXGU4RA8uiorT3MyNelK ($4.99)
+Annual: price_1SJM1TGU4RA8uioraKHqaG83 ($49.99)
+    </div>
+  </div>
+
+  <script>
+    const CHECKOUT_ENDPOINT = "https://us-central1-echomind-pro-launch.cloudfunctions.net/createCheckoutSession";
+
+    async function testCheckout(plan) {
+      const resultDiv = document.getElementById(`${plan}-result`);
+      resultDiv.innerHTML = '<div class="info result">⏳ Testing checkout session creation...</div>';
+      
+      try {
+        console.log(`Testing ${plan} checkout...`);
+        
+        const response = await fetch(`${CHECKOUT_ENDPOINT}?plan=${plan}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        console.log('Response data:', data);
+        
+        if (data.url) {
+          resultDiv.innerHTML = `
+            <div class="success result">
+✅ <strong>SUCCESS!</strong>
+
+Checkout URL created:
+${data.url}
+
+Plan: ${data.plan || plan}
+Session ID: ${data.sessionId || 'N/A'}
+
+<button onclick="window.open('${data.url}', '_blank')">Open Checkout Page</button>
+            </div>
+          `;
+        } else {
+          throw new Error('No checkout URL in response');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        resultDiv.innerHTML = `
+          <div class="error result">
+❌ <strong>ERROR</strong>
+
+${error.message}
+
+Check browser console for details.
+          </div>
+        `;
+      }
+    }
+
+    async function redirectToCheckout(plan) {
+      try {
+        const response = await fetch(`${CHECKOUT_ENDPOINT}?plan=${plan}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        
+        const data = await response.json();
+        
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          alert('Failed to create checkout session. Check console for details.');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert(`Error: ${error.message}`);
+      }
+    }
+  </script>
+</body>
+</html>
