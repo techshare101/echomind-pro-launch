@@ -1,0 +1,68 @@
+{
+  "manifest_version": 3,
+  "name": "EchoMind",
+  "version": "0.3.5",
+  "description": "Your offline AI memory vault, summarizer, and context keeper — now with stable context menu integration.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Open EchoMind Control Window"
+  },
+  "options_ui": {
+    "page": "popup/dashboard.html",
+    "open_in_tab": true
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "contextMenus",
+    "tabs",
+    "notifications"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "popup.html",
+        "popup.js",
+        "popup.css",
+        "popup/dashboard.html",
+        "popup/dashboard.js",
+        "vault.html",
+        "vault.js",
+        "vault.css",
+        "icons/*",
+        "assets/*"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
+  },
+  "commands": {
+    "open-echo-window": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+E"
+      },
+      "description": "Open EchoMind control window"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
+  ]
+}

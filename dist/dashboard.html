@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EchoMind Dashboard</title>
+    <link rel="icon" href="/favicon.ico" />
+    <style>
+      body {
+        margin: 0;
+        font-family: "Inter", sans-serif;
+        background: radial-gradient(circle at top, #0a0b0f, #0e1117);
+        color: #e8e8e8;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        justify-content: center;
+      }
+      h1 {
+        font-size: 2rem;
+        background: linear-gradient(90deg, #7b61ff, #00ffc6);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+        margin-bottom: 0.2em;
+      }
+      .plan {
+        color: #00ffc6;
+        margin-bottom: 1em;
+        font-weight: 500;
+      }
+      .tools {
+        display: flex;
+        gap: 1em;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 2em;
+      }
+      button {
+        background: linear-gradient(90deg, #7b61ff, #00ffc6);
+        border: none;
+        color: white;
+        font-weight: 600;
+        padding: 0.8em 1.8em;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: transform 0.2s, opacity 0.3s;
+      }
+      button:hover {
+        transform: translateY(-3px);
+        opacity: 0.9;
+      }
+      footer {
+        position: absolute;
+        bottom: 1em;
+        width: 100%;
+        font-size: 0.8rem;
+        color: #888;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🧠 EchoMind Pro Dashboard</h1>
+    <p class="plan" id="plan-status">Checking subscription...</p>
+
+    <div class="tools">
+      <button id="summarize">⚡ Summarize</button>
+      <button id="explain">💡 Explain</button>
+      <button id="vault">🔐 Vault</button>
+      <button id="logout">🚪 Logout</button>
+    </div>
+
+    <footer>© 2025 MetalMindTech — Forge Edition</footer>
+
+    <script>
+      async function checkSub() {
+        try {
+          // Get email from localStorage or use demo
+          const email = localStorage.getItem("echomind_pro_email") || "demo@echomind.ai";
+          
+          const res = await fetch(
+            `/api/checkSubscription?email=${encodeURIComponent(email)}`
+          );
+          
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          }
+          
+          const data = await res.json();
+          console.log("Subscription data:", data);
+          
+          document.getElementById("plan-status").textContent = data.active
+            ? `💎 Pro Plan Active (${data.plan})` 
+            : "⚠️ Free Plan — Upgrade to unlock Forge Mode";
+        } catch (err) {
+          console.error("Error checking subscription:", err);
+          document.getElementById("plan-status").textContent = "⚠️ Could not verify subscription - " + err.message;
+        }
+      }
+      checkSub();
+
+      document.getElementById("vault").onclick = () =>
+        (window.location.href = "/vault.html");
+      
+      document.getElementById("logout").onclick = () => {
+        if (confirm("Are you sure you want to logout?")) {
+          window.location.href = "/";
+        }
+      };
+    </script>
+  </body>
+</html>

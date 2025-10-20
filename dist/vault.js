@@ -1,0 +1,15 @@
+import"./modulepreload-polyfill.js";/* empty css            */const c=document.getElementById("vault-list"),d=document.getElementById("search"),s=document.getElementById("refresh"),f=document.getElementById("export"),h=document.getElementById("clear"),g=document.getElementById("entry-count"),p=document.getElementById("filtered-count"),v=document.getElementById("filtered-num");let o=[];async function u(){try{const{vaultEntries:t=[]}=await chrome.storage.local.get("vaultEntries");o=t,g.textContent=`${o.length} ${o.length===1?"entry":"entries"}`,m()}catch(t){console.error("Failed to load vault:",t),c.innerHTML=`<p class="empty">⚠️ Error loading vault: ${t.message}</p>`}}function m(){const t=d.value.toLowerCase().trim();let n=o;if(t&&(n=o.filter(e=>e.text.toLowerCase().includes(t)||e.type.toLowerCase().includes(t))),t&&n.length!==o.length?(p.style.display="inline",v.textContent=n.length):p.style.display="none",n.length===0){c.innerHTML=`<p class="empty">
+      ${t?"No entries match your search.":`No saved entries yet.
+Highlight text and use EchoMind!`}
+    </p>`;return}c.innerHTML=n.slice(-200).reverse().map((e,r)=>`
+      <div class="entry" data-index="${r}">
+        <div class="entry-header">
+          <span class="entry-type">${i(e.type)}</span>
+          <span class="entry-time">${E(e.time)}</span>
+        </div>
+        <div class="entry-text">${i(e.text.slice(0,500))}</div>
+        <div class="entry-actions">
+          <button class="copy-btn" data-text="${i(e.text)}">📋 Copy</button>
+        </div>
+      </div>
+    `).join(""),document.querySelectorAll(".copy-btn").forEach(e=>{e.addEventListener("click",async r=>{const l=e.getAttribute("data-text");try{await navigator.clipboard.writeText(l);const a=e.textContent;e.textContent="✅ Copied!",setTimeout(()=>{e.textContent=a},2e3)}catch(a){console.error("Copy failed:",a)}})})}d.addEventListener("input",m);s.addEventListener("click",async()=>{s.disabled=!0,await u(),s.disabled=!1});f.addEventListener("click",async()=>{try{const{vaultEntries:t=[]}=await chrome.storage.local.get("vaultEntries"),n=new Blob([JSON.stringify(t,null,2)],{type:"application/json"}),e=URL.createObjectURL(n);chrome.downloads.download({url:e,filename:`echomind_vault_${new Date().toISOString().split("T")[0]}.json`})}catch(t){console.error("Export failed:",t),alert("Failed to export vault")}});h.addEventListener("click",async()=>{if(confirm("🗑️ Clear ALL vault entries? This cannot be undone."))try{await chrome.storage.local.set({vaultEntries:[]}),o=[],d.value="",m(),g.textContent="0 entries"}catch(t){console.error("Clear failed:",t),alert("Failed to clear vault")}});function E(t){const n=new Date,e=new Date(t),r=n.getTime()-e.getTime(),l=Math.floor(r/6e4),a=Math.floor(r/36e5),y=Math.floor(r/864e5);return l<1?"Just now":l<60?`${l}m ago`:a<24?`${a}h ago`:y<7?`${y}d ago`:e.toLocaleDateString()}function i(t){const n={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"};return t.replace(/[&<>"']/g,e=>n[e])}u();setInterval(u,5e3);

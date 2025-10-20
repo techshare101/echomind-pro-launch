@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EchoMind Vault</title>
+  <script type="module" crossorigin src="/vault.js"></script>
+  <link rel="modulepreload" crossorigin href="/modulepreload-polyfill.js">
+  <link rel="stylesheet" crossorigin href="/vault-styles.css">
+</head>
+<body>
+  <div id="vault-app">
+    <header class="vault-header">
+      <div class="header-content">
+        <div class="header-title">
+          <div class="pulse-orb"></div>
+          <h1>🧠 EchoMind Vault</h1>
+          <p class="subtitle">Your permanent memory forge</p>
+        </div>
+        <div class="header-controls">
+          <button id="refresh" class="btn btn-secondary" title="Refresh vault">↻ Refresh</button>
+          <button id="export" class="btn btn-secondary" title="Export all entries">📤 Export</button>
+          <button id="clear" class="btn btn-danger" title="Clear all entries">🗑️ Clear</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="search-container">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <path d="m21 21-4.35-4.35"></path>
+      </svg>
+      <input id="search" type="text" placeholder="Search entries by text or type…" class="search-input" />
+    </div>
+
+    <div class="stats-bar">
+      <span id="entry-count">0 entries</span>
+      <span id="filtered-count" style="display:none;">Showing <strong id="filtered-num">0</strong></span>
+    </div>
+
+    <div id="vault-list" class="vault-list"></div>
+  </div>
+
+</body>
+</html>
