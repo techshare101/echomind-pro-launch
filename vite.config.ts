@@ -22,6 +22,7 @@ export default defineConfig({
         { src: 'src/vault.html', dest: '.' },
         // Copy payment pages for deployment
         { src: 'index.html', dest: '.' },  // Home page for Vercel
+        { src: 'dashboard.html', dest: '.' },  // Dashboard page
         { src: 'success.html', dest: '.' },
         { src: 'cancel.html', dest: '.' },
         { src: 'pricing.html', dest: '.' },

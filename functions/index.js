@@ -76,6 +76,7 @@ exports.stripeWebhook = onRequest(
         await userRef.set(
             {
               status: "active",
+              unlimited: true, // Pro users get unlimited audits
               lastUpdated: admin.firestore.Timestamp.now(),
             },
             {merge: true},
@@ -97,6 +98,7 @@ exports.stripeWebhook = onRequest(
         email: session.customer_email,
         status: "active",
         plan: plan, // Store plan type (monthly/annual)
+        unlimited: true, // Pro users get unlimited audits
         createdAt: admin.firestore.Timestamp.now(),
       });
       
@@ -174,18 +176,36 @@ exports.checkSubscription = onRequest(
     }
 
     if (!userDoc.exists) {
+      console.log("❌ No subscription found for", uid || email);
       return res.status(200).json({
+        active: false,
+        plan: "free",
         status: "free",
+        unlimited: false,
         message: "No active subscription found.",
       });
     }
 
     const data = userDoc.data();
     const status = data.status || "free";
+    const plan = data.plan || "monthly";
+    const isActive = status === "active";
+    
+    // Calculate renewal date for Pro users
+    let renewalDate = null;
+    if (isActive && data.updatedAt) {
+      const subscriptionStart = data.updatedAt.toDate();
+      const daysToAdd = plan === "annual" ? 365 : 30;
+      renewalDate = new Date(subscriptionStart.getTime() + (daysToAdd * 24 * 60 * 60 * 1000));
+    }
 
-    console.log("✅ Subscription check for", uid || email, ":", status);
+    console.log("✅ Subscription check for", uid || email, ":", status, plan);
     return res.status(200).json({
+      active: isActive,
+      plan: plan,
       status: status,
+      unlimited: isActive, // Pro users get unlimited audits
+      renewal_date: renewalDate,
       last_updated: data.last_updated || null,
     });
   } catch (error) {
@@ -270,12 +290,14 @@ exports.verifySessionInstant = onRequest(
           const plan = session.metadata?.plan || "monthly";
 
           // Instantly mark as active in Firestore
+          const subscriptionStart = admin.firestore.Timestamp.now();
           await db.collection("user_subscription_status").doc(email).set({
             status: "active",
             plan: plan,
-            updatedAt: admin.firestore.Timestamp.now(),
+            updatedAt: subscriptionStart,
             instantUnlock: true,
             sessionId: sessionId,
+            unlimited: true, // Pro users get unlimited audits
           }, {merge: true});
 
           console.log("⚡ Instant unlock activated for:", email);

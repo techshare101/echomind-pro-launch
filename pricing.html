@@ -233,8 +233,8 @@
   </div>
 
   <script>
-    // Your Firebase Cloud Function endpoint
-    const CHECKOUT_ENDPOINT = "https://us-central1-echomind-pro-launch.cloudfunctions.net/createCheckoutSession";
+    // Firebase Cloud Function endpoint (proxied through Vercel)
+    const CHECKOUT_ENDPOINT = "/api/createCheckoutSession";
 
     async function selectPlan(plan) {
       const button = document.getElementById(`${plan}-btn`);

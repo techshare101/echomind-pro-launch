@@ -20,9 +20,9 @@ const proStatus = document.getElementById("proStatus");
 const upgradeMonthlyBtn = document.getElementById("upgradeMonthly");
 const upgradeAnnualBtn = document.getElementById("upgradeAnnual");
 
-// Firebase Cloud Functions endpoints
-const CHECKOUT_ENDPOINT = "https://us-central1-echomind-pro-launch.cloudfunctions.net/createCheckoutSession";
-const CHECK_SUBSCRIPTION_ENDPOINT = "https://checksubscription-evcnapia4q-uc.a.run.app";
+// Firebase Cloud Functions endpoints (proxied through Vercel)
+const CHECKOUT_ENDPOINT = "/api/createCheckoutSession";
+const CHECK_SUBSCRIPTION_ENDPOINT = "/api/checkSubscription";
 
 function showStatus(msg, type = "info") {
   statusEl.textContent = msg;
@@ -548,8 +548,6 @@ async function checkSubscriptionStatus() {
       console.log("No user email found, using public email for checkout");
     }
 
-    // Check subscription status via API
-    const response = await fetch(`${CHECK_SUBSCRIPTION_ENDPOINT}?email=${encodeURIComponent(userEmail)}`);
     const data = await response.json();
 
     if (data.status === "active") {
@@ -645,7 +643,7 @@ async function handleUpgrade(plan) {
 
     console.log(`Creating ${plan} checkout session...`);
 
-    // Call Firebase function to create checkout session
+    // Call Firebase function to create checkout session (proxied through Vercel)
     const response = await fetch(`${CHECKOUT_ENDPOINT}?plan=${plan}`, {
       method: "POST",
       headers: {

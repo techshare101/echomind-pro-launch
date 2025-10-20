@@ -276,10 +276,10 @@
   </div>
 
   <script>
-    // 🌐 Firebase Function URL (auto-detects environment)
+    // 🌐 Firebase Function URL (proxied through Vercel)
     const VERIFY_SESSION_URL = 
       window.VITE_FUNCTIONS_BASE_URL || 
-      "https://us-central1-echomind-pro-launch.cloudfunctions.net/verifySessionInstant";
+      "/api/verifySessionInstant";
     
     // --- Confetti Animation ---
     function launchConfetti() {
@@ -379,13 +379,19 @@
           // 🎊 Launch confetti!
           launchConfetti();
           
-          // 🔄 Auto-close tab after 3.5 seconds
+          // 🔄 Redirect to dashboard after 3.5 seconds (or close tab if opened from extension)
           setTimeout(() => {
             try {
+              // Try to close tab first (works if opened by extension)
               window.close();
             } catch (e) {
-              console.log("Could not auto-close tab:", e);
+              console.log("Could not auto-close tab, redirecting to dashboard:", e);
             }
+            
+            // If tab didn't close, redirect to dashboard
+            setTimeout(() => {
+              window.location.href = "/dashboard.html";
+            }, 100);
           }, 3500);
           
         } else if (data.status === "pending") {
