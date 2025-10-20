@@ -276,7 +276,10 @@
   </div>
 
   <script>
-    const VERIFY_SESSION_URL = "https://us-central1-echomind-pro-launch.cloudfunctions.net/verifySessionInstant";
+    // 🌐 Firebase Function URL (auto-detects environment)
+    const VERIFY_SESSION_URL = 
+      window.VITE_FUNCTIONS_BASE_URL || 
+      "https://us-central1-echomind-pro-launch.cloudfunctions.net/verifySessionInstant";
     
     // --- Confetti Animation ---
     function launchConfetti() {
@@ -375,6 +378,15 @@
           
           // 🎊 Launch confetti!
           launchConfetti();
+          
+          // 🔄 Auto-close tab after 3.5 seconds
+          setTimeout(() => {
+            try {
+              window.close();
+            } catch (e) {
+              console.log("Could not auto-close tab:", e);
+            }
+          }, 3500);
           
         } else if (data.status === "pending") {
           // Payment still processing
