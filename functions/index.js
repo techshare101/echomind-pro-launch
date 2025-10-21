@@ -2,11 +2,18 @@ const {onRequest} = require("firebase-functions/v2/https");
 const {defineSecret} = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const Stripe = require("stripe");
+const express = require("express");
+const cors = require("./corsConfig");
 
 // Load environment variables from .env file (for local development)
 require("dotenv").config();
 
-admin.initializeApp();
+// ✅ Initialize Firebase Admin BEFORE importing apiRouter
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+
+const apiRouter = require("./apiRouter");
 const db = admin.firestore();
 
 // Define secrets for 2nd-gen functions
@@ -92,18 +99,32 @@ exports.stripeWebhook = onRequest(
     case "checkout.session.completed": {
       const session = event.data.object;
       const plan = session.metadata?.plan || "monthly"; // Get plan from metadata
+      const email = session.customer_details?.email || session.customer_email;
       
+      // Store in subscriptions collection
       await db.collection("subscriptions").doc(session.id).set({
         customer: session.customer,
-        email: session.customer_email,
+        customerId: session.customer,
+        email: email,
         status: "active",
-        plan: plan, // Store plan type (monthly/annual)
-        unlimited: true, // Pro users get unlimited audits
+        plan: plan,
+        unlimited: true,
         createdAt: admin.firestore.Timestamp.now(),
       });
       
+      // Also update user_subscription_status for quick lookups
+      if (email) {
+        await db.collection("user_subscription_status").doc(email).set({
+          status: "active",
+          plan: plan,
+          customerId: session.customer,
+          unlimited: true,
+          updatedAt: admin.firestore.Timestamp.now(),
+        }, {merge: true});
+      }
+      
       console.log(`✅ Checkout session completed: ${session.id} (${plan})`);
-      console.log(`🔥 Pro ${plan} activated for: ${session.customer_email}`);
+      console.log(`🔥 Pro ${plan} activated for: ${email}`);
       break;
     }
 
@@ -116,12 +137,46 @@ exports.stripeWebhook = onRequest(
       break;
     }
 
+    case "customer.subscription.updated": {
+      const subscription = event.data.object;
+      const email = subscription.metadata?.email || null;
+      
+      // Update subscription status
+      const updateData = {
+        status: subscription.status,
+        plan: subscription.items.data[0]?.price?.recurring?.interval || "monthly",
+        updatedAt: admin.firestore.Timestamp.now(),
+      };
+      
+      // Update user_subscription_status if we have email
+      if (email) {
+        await db.collection("user_subscription_status").doc(email).update(updateData);
+        console.log(`🔄 Subscription updated for ${email}:`, subscription.status);
+      }
+      
+      // Also update subscriptions collection
+      await db.collection("subscriptions").doc(subscription.id).update(updateData);
+      break;
+    }
+
     case "customer.subscription.deleted": {
       const subscription = event.data.object;
-      await db.collection("subscriptions").doc(subscription.id).update({
+      const email = subscription.metadata?.email || null;
+      
+      const cancelData = {
         status: "canceled",
+        unlimited: false,
         canceledAt: admin.firestore.Timestamp.now(),
-      });
+      };
+      
+      // Update user_subscription_status
+      if (email) {
+        await db.collection("user_subscription_status").doc(email).update(cancelData);
+        console.log(`🛑 Subscription canceled for ${email}`);
+      }
+      
+      // Update subscriptions collection
+      await db.collection("subscriptions").doc(subscription.id).update(cancelData);
       console.log("🛑 Subscription canceled:", subscription.id);
       break;
     }
@@ -134,11 +189,44 @@ exports.stripeWebhook = onRequest(
     },
 );
 
+// 🔥 UNIFIED API ENDPOINT - All routes under /api
+const app = express();
+app.use(cors);
+app.use(express.json());
+
+// Mount the unified router (flattened routes)
+app.use('/', apiRouter);
+
+// Health check / default route
+app.get('/', (req, res) => {
+  res.json({
+    status: '🔥 EchoMind Pro API running',
+    version: '2.0',
+    endpoints: [
+      '/checkSubscription',
+      '/createCheckoutSession',
+      '/verifySessionInstant',
+      '/createCustomerPortalSession',
+    ],
+  });
+});
+
+// Deploy as a single unified function
+exports.api = onRequest(
+    {
+      region: "us-central1",
+      cors: true,
+      secrets: [stripeSecretKey, stripePriceMonthly, stripePriceAnnual],
+      timeoutSeconds: 60,
+      memory: "256MiB",
+    },
+    app,
+);
+
+// ✅ LEGACY ENDPOINTS (kept for backward compatibility - will be deprecated)
 // ✅ Verify user subscription status
 exports.checkSubscription = onRequest(
     {
-      timeoutSeconds: 60,
-      memory: "256MiB",
       region: "us-central1",
       cors: true,
       secrets: [stripeSecretKey],
@@ -148,34 +236,55 @@ exports.checkSubscription = onRequest(
     // Allow CORS for Chrome Extension calls
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "GET, POST");
-    res.set("Access-Control-Allow-Headers", "Content-Type");
+    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
     if (req.method === "OPTIONS") {
       return res.status(204).send("");
     }
 
-    // 🔐 Get UID or email from query parameters
-    const uid = req.query.uid;
-    const email = req.query.email;
+    let uid = null;
+    let email = null;
 
-    if (!uid && !email) {
-      return res.status(400).json({error: "Missing uid or email"});
+    // 🔐 NEW: Check for Firebase ID token (secure method)
+    if (req.body && req.body.idToken) {
+      try {
+        const decodedToken = await admin.auth().verifyIdToken(req.body.idToken);
+        uid = decodedToken.uid;
+        email = decodedToken.email;
+        console.log("✅ Authenticated user:", email);
+      } catch (authError) {
+        console.error("❌ Token verification failed:", authError);
+        return res.status(401).json({error: "Invalid or expired ID token"});
+      }
+    } else {
+      // 🔓 FALLBACK: Support old method for backward compatibility
+      uid = req.query.uid || req.body.uid;
+      email = req.query.email || req.body.email;
     }
 
+    if (!uid && !email) {
+      return res.status(400).json({error: "Missing uid, email, or idToken"});
+    }
+
+    // Look up subscription in Firestore
     let userDoc;
     if (uid) {
       userDoc = await db
           .collection("user_subscription_status")
           .doc(uid)
           .get();
-    } else if (email) {
-      userDoc = await db
-          .collection("user_subscription_status")
-          .doc(email)
-          .get();
+    }
+    
+    if (!userDoc || !userDoc.exists) {
+      if (email) {
+        userDoc = await db
+            .collection("user_subscription_status")
+            .doc(email)
+            .get();
+      }
     }
 
-    if (!userDoc.exists) {
+    if (!userDoc || !userDoc.exists) {
       console.log("❌ No subscription found for", uid || email);
       return res.status(200).json({
         active: false,
@@ -183,6 +292,8 @@ exports.checkSubscription = onRequest(
         status: "free",
         unlimited: false,
         message: "No active subscription found.",
+        email: email,
+        uid: uid,
       });
     }
 
@@ -203,10 +314,15 @@ exports.checkSubscription = onRequest(
     return res.status(200).json({
       active: isActive,
       plan: plan,
+      plan_type: plan, // For dashboard compatibility
       status: status,
       unlimited: isActive, // Pro users get unlimited audits
       renewal_date: renewalDate,
+      period_end: renewalDate ? Math.floor(renewalDate.getTime() / 1000) : null,
+      customerId: data.customerId || null, // Stripe customer ID for portal
       last_updated: data.last_updated || null,
+      email: email,
+      uid: uid,
     });
   } catch (error) {
     console.error("❌ Error checking subscription:", error);
@@ -238,8 +354,8 @@ exports.createCheckoutSession = onRequest(
           : stripePriceMonthly.value();
 
         // Environment-agnostic URLs (works locally, Firebase, Vercel)
-        const successUrl = process.env.SUCCESS_URL || process.env.LOCAL_SUCCESS_URL || "https://echomind-ai.vercel.app/success.html";
-        const cancelUrl = process.env.CANCEL_URL || process.env.LOCAL_CANCEL_URL || "https://echomind-ai.vercel.app/cancel.html";
+        const successUrl = process.env.SUCCESS_URL || "https://echomind-pro-launch.vercel.app/success.html";
+        const cancelUrl = process.env.CANCEL_URL || "https://echomind-pro-launch.vercel.app/pricing.html";
 
         // Create checkout session
         const session = await stripe.checkout.sessions.create({
@@ -313,6 +429,78 @@ exports.verifySessionInstant = onRequest(
         return res.status(200).json({status: "pending"});
       } catch (error) {
         console.error("❌ Instant verify error:", error);
+        return res.status(500).json({error: error.message});
+      }
+    },
+);
+
+// 🎫 Create Stripe Customer Portal Session (for subscription management)
+exports.createCustomerPortalSession = onRequest(
+    {
+      secrets: [stripeSecretKey],
+      cors: true,
+      region: "us-central1",
+      timeoutSeconds: 60,
+    },
+    async (req, res) => {
+      try {
+        // Allow CORS
+        res.set("Access-Control-Allow-Origin", "*");
+        res.set("Access-Control-Allow-Methods", "GET, POST");
+        res.set("Access-Control-Allow-Headers", "Content-Type");
+
+        if (req.method === "OPTIONS") {
+          return res.status(204).send("");
+        }
+
+        const {customerId, email} = req.body;
+
+        if (!customerId && !email) {
+          return res.status(400).json({error: "Missing customerId or email"});
+        }
+
+        // Initialize Stripe
+        const stripe = new Stripe(stripeSecretKey.value(), {
+          apiVersion: "2024-12-18.acacia",
+        });
+
+        // If email provided, find customer ID
+        let stripeCustomerId = customerId;
+        if (!stripeCustomerId && email) {
+          // Look up customer by email in Firestore
+          const userDoc = await db
+              .collection("user_subscription_status")
+              .doc(email)
+              .get();
+
+          if (userDoc.exists && userDoc.data().customerId) {
+            stripeCustomerId = userDoc.data().customerId;
+          } else {
+            // Try to find customer in Stripe by email
+            const customers = await stripe.customers.list({email: email, limit: 1});
+            if (customers.data.length > 0) {
+              stripeCustomerId = customers.data[0].id;
+            }
+          }
+        }
+
+        if (!stripeCustomerId) {
+          return res.status(404).json({error: "Customer not found"});
+        }
+
+        // Create portal session
+        const returnUrl = process.env.PORTAL_RETURN_URL ||
+          "https://echomind-ai.vercel.app/dashboard.html";
+
+        const portalSession = await stripe.billingPortal.sessions.create({
+          customer: stripeCustomerId,
+          return_url: returnUrl,
+        });
+
+        console.log("✅ Customer portal session created for:", stripeCustomerId);
+        return res.status(200).json({url: portalSession.url});
+      } catch (error) {
+        console.error("❌ Error creating customer portal:", error);
         return res.status(500).json({error: error.message});
       }
     },

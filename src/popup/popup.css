@@ -275,20 +275,376 @@ header {
   color: #00ffa2;
 }
 
-.settings {
+/* Main Panel & Settings Panel Animations */
+.main-panel {
+  transition: all 0.4s ease-in-out;
+  pointer-events: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.settings-panel {
   position: absolute;
   top: 0;
   left: 0;
   background: #0d1117;
   width: 100%;
   height: 100%;
-  padding: 16px;
+  padding: 24px;
   box-sizing: border-box;
   border-radius: 8px;
   z-index: 10;
+  transition: all 0.4s ease-in-out;
+  overflow-y: auto;
+  pointer-events: auto;
 }
 
-.hidden { display: none; }
+.settings-panel.hidden {
+  display: none !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}
+
+.settings-title {
+  color: #5eead4;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.settings-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #e6edf3;
+  font-size: 14px;
+  margin-bottom: 16px;
+  cursor: pointer;
+}
+
+.settings-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #5eead4;
+  cursor: pointer;
+}
+
+.settings-input-group {
+  margin-bottom: 16px;
+}
+
+.settings-textarea {
+  width: 100%;
+  height: 80px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #5eead4;
+  background: #161b22;
+  color: #e6edf3;
+  font-family: monospace;
+  font-size: 13px;
+  resize: none;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.settings-textarea:focus {
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
+}
+
+.settings-save-btn {
+  width: 100%;
+  background: linear-gradient(90deg, #5eead4, #3b82f6);
+  color: #0f172a;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(94, 234, 212, 0.3);
+}
+
+.settings-save-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(94, 234, 212, 0.4);
+}
+
+.manage-sub-btn {
+  width: 100%;
+  background: linear-gradient(90deg, #5eead4, #7c3aed);
+  color: white;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(94, 234, 212, 0.3);
+}
+
+.manage-sub-btn:hover {
+  background: linear-gradient(90deg, #7c3aed, #5eead4);
+  transform: scale(1.02);
+  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4);
+}
+
+.manage-sub-btn:active {
+  transform: scale(0.97);
+}
+
+/* 🔥 Forge Glow Pulse Animation */
+@keyframes forgePulse {
+  0% {
+    box-shadow: 0 4px 12px rgba(94, 234, 212, 0.4),
+                0 0 24px rgba(124, 58, 237, 0.2);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5),
+                0 0 40px rgba(94, 234, 212, 0.3);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow: 0 4px 12px rgba(94, 234, 212, 0.4),
+                0 0 24px rgba(124, 58, 237, 0.2);
+    transform: scale(1);
+  }
+}
+
+.animate-forge-pulse {
+  animation: forgePulse 2.5s infinite ease-in-out;
+}
+
+.back-btn {
+  width: 100%;
+  background: #1f2937;
+  color: #e6edf3;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.back-btn:hover {
+  background: #374151;
+  box-shadow: 0 4px 12px rgba(94, 234, 212, 0.2);
+}
+
+/* Animation utility classes */
+.translate-x-full {
+  transform: translateX(100%);
+}
+
+.translate-x-\[-100\%\] {
+  transform: translateX(-100%);
+}
+
+.translate-x-0 {
+  transform: translateX(0);
+}
+
+.opacity-0 {
+  opacity: 0;
+}
+
+.opacity-100 {
+  opacity: 1;
+}
+
+.hidden { 
+  display: none; 
+}
+
+/* 🌌 Forge Portal Overlay Styles */
+.portal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  transition: opacity 0.5s ease-in-out;
+  opacity: 0;
+  pointer-events: auto;
+}
+
+.portal-overlay:not(.hidden) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.portal-overlay.hidden {
+  display: none !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}
+
+.portal-container {
+  position: relative;
+  width: 90%;
+  height: 80%;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(94, 234, 212, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(94, 234, 212, 0.2);
+  background: #161b22;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Loading Shimmer */
+.portal-loader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+  z-index: 10;
+}
+
+.loader-text {
+  color: #5eead4;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  animation: shimmerPulse 2s infinite alternate;
+}
+
+@keyframes shimmerPulse {
+  from { 
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  to { 
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+/* Progress Bar */
+.progress-bar-container {
+  width: 66%;
+  height: 8px;
+  border-radius: 999px;
+  background: #1f2937;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #5eead4, #7c3aed, #3b82f6);
+  width: 0%;
+  transition: width 0.3s ease-out;
+  box-shadow: 0 0 20px rgba(94, 234, 212, 0.5);
+  animation: progressGlow 2s ease-in-out infinite;
+}
+
+@keyframes progressGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(94, 234, 212, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(124, 58, 237, 0.7);
+  }
+}
+
+/* Forge Logo Loader */
+.forge-logo-loader {
+  margin-top: 16px;
+  animation: logoFloat 3s ease-in-out infinite;
+}
+
+@keyframes logoFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(180deg);
+  }
+}
+
+.loader-circle {
+  animation: circleRotate 2s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes circleRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loader-diamond {
+  animation: diamondPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes diamondPulse {
+  0%, 100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+/* Portal Frame */
+.portal-frame {
+  flex: 1;
+  border: none;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.portal-frame.loaded {
+  opacity: 1;
+}
+
+/* Close Button */
+.portal-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(31, 41, 55, 0.8);
+  color: #e6edf3;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 20;
+}
+
+.portal-close-btn:hover {
+  background: rgba(55, 65, 81, 0.9);
+  box-shadow: 0 6px 16px rgba(94, 234, 212, 0.3);
+  transform: scale(1.05);
+}
 
 textarea {
   width: 100%;

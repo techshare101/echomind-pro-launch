@@ -8,11 +8,13 @@
 </head>
 <body>
   <div id="app">
-    <header>
-      <h2>🧠 EchoMind</h2>
-      <div id="proStatus" class="pro-status hidden">✨ PRO</div>
-      <button id="settingsBtn" class="icon-btn" title="Settings">⚙️</button>
-    </header>
+    <!-- 🧠 MAIN DASHBOARD PANEL -->
+    <div id="mainPanel" class="main-panel transition-all duration-500 ease-in-out transform opacity-100 translate-x-0">
+      <header>
+        <h2>🧠 EchoMind</h2>
+        <div id="proStatus" class="pro-status hidden">✨ PRO</div>
+        <button id="settingsBtn" class="icon-btn" title="Settings">⚙️</button>
+      </header>
 
     <!-- Upgrade to Pro Section -->
     <div id="proBox" class="pro-box">
@@ -27,11 +29,11 @@
       </div>
 
       <div class="pro-buttons">
-        <button id="upgradeMonthly" class="upgrade-btn monthly">
+        <button id="upgradeMonthly" class="upgrade-btn monthly animate-forge-pulse">
           <span class="price">$4.99</span>
           <span class="period">/month</span>
         </button>
-        <button id="upgradeAnnual" class="upgrade-btn annual">
+        <button id="upgradeAnnual" class="upgrade-btn annual animate-forge-pulse">
           <span class="badge-save">Save 17%</span>
           <span class="price">$49.99</span>
           <span class="period">/year</span>
@@ -69,16 +71,77 @@
       </div>
       <div id="vaultEntries" class="vault-entries"></div>
     </div>
+    </div>
+    <!-- End of mainPanel -->
+
+    <!-- ⚙ SETTINGS PANEL -->
+    <div id="settingsPanel" class="settings-panel hidden transition-all duration-500 ease-in-out transform translate-x-full opacity-0">
+      <h2 class="settings-title">⚙ Settings</h2>
+
+      <label class="settings-label">
+        <input type="checkbox" id="aiToggle" class="settings-checkbox" />
+        Enable Cloud AI
+      </label>
+
+      <div class="settings-input-group">
+        <textarea id="apiKeyInput" placeholder="Enter OpenAI API key here" class="settings-textarea"></textarea>
+      </div>
+
+      <button id="saveSettingsBtn" class="settings-save-btn">💾 Save Settings</button>
+
+      <!-- 💳 Manage Subscription -->
+      <button id="manageSubBtn" class="manage-sub-btn animate-forge-pulse">
+        💳 Manage Subscription
+      </button>
+
+      <!-- 🔙 Back Button -->
+      <button id="backBtn" class="back-btn">
+        ← Back to Dashboard
+      </button>
+    </div>
   </div>
 
-  <!-- hidden settings panel -->
-  <div id="settingsPanel" class="settings hidden">
-    <h3>Settings</h3>
-    <label>
-      <input type="checkbox" id="aiToggle" /> Enable Cloud AI
-    </label>
-    <textarea id="apiKeyInput" placeholder="Enter OpenAI API key here"></textarea>
-    <button id="saveSettingsBtn">💾 Save Settings</button>
+  <!-- 🌌 FORGE PORTAL OVERLAY -->
+  <div id="portalOverlay" class="portal-overlay hidden">
+    <div class="portal-container">
+      
+      <!-- 🚀 Loading Shimmer -->
+      <div id="portalLoader" class="portal-loader">
+        <div class="loader-text">Initializing Forge Portal...</div>
+        
+        <!-- Progress Bar -->
+        <div class="progress-bar-container">
+          <div id="portalProgress" class="progress-bar"></div>
+        </div>
+        
+        <!-- Forge Logo Animation -->
+        <div class="forge-logo-loader">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="60" height="60">
+            <defs>
+              <linearGradient id="loaderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#5EEAD4"/>
+                <stop offset="50%" stop-color="#7C3AED"/>
+                <stop offset="100%" stop-color="#3B82F6"/>
+              </linearGradient>
+            </defs>
+            <circle cx="30" cy="30" r="24" fill="none" stroke="url(#loaderGradient)" stroke-width="4" class="loader-circle"/>
+            <path d="M30 10 L38 30 L30 50 L22 30 Z" fill="url(#loaderGradient)" opacity="0.8" class="loader-diamond"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Stripe Portal Iframe -->
+      <iframe id="portalFrame"
+              src=""
+              class="portal-frame"
+              sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation">
+      </iframe>
+
+      <!-- 🔙 Close Button -->
+      <button id="closePortalBtn" class="portal-close-btn">
+        ✕
+      </button>
+    </div>
   </div>
 
   <!-- MetalMindTech Forge Seal -->

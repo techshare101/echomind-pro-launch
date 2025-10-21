@@ -128,7 +128,7 @@ ZIP: Any 5 digits (e.g., 12345)
     <h2>🔗 Configuration</h2>
     <div class="info result">
 <strong>Endpoint:</strong>
-/api/createCheckoutSession (proxied through Vercel)
+https://us-central1-echomind-pro-launch.cloudfunctions.net/api/createCheckoutSession (Unified API)
 
 <strong>Prices:</strong>
 Monthly: price_1SJLwXGU4RA8uiorT3MyNelK ($4.99)
@@ -137,7 +137,7 @@ Annual: price_1SJM1TGU4RA8uioraKHqaG83 ($49.99)
   </div>
 
   <script>
-    const CHECKOUT_ENDPOINT = "/api/createCheckoutSession";
+    const CHECKOUT_ENDPOINT = "https://us-central1-echomind-pro-launch.cloudfunctions.net/api/createCheckoutSession";
 
     async function testCheckout(plan) {
       const resultDiv = document.getElementById(`${plan}-result`);

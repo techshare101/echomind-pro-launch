@@ -1,0 +1,166 @@
+/* forge-theme.css — MetalMindTech Forge Mode Global Theme */
+
+:root {
+  --cyan: #00ffe0;
+  --violet: #8b5cf6;
+  --dark-bg: #070a1a;
+  --accent-red: #ff4b4b;
+  --accent-orange: #ff9f43;
+  --text-light: #e0e7ff;
+  --text-dim: #9ca3af;
+}
+
+body {
+  background: radial-gradient(circle at 20% 20%, var(--dark-bg), #000);
+  color: var(--text-light);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  text-align: center;
+  margin: 0;
+  padding: 20px;
+}
+
+h1 {
+  font-size: 2.2rem;
+  background: linear-gradient(90deg, var(--cyan), var(--violet));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: glow 2s ease-in-out infinite alternate;
+  margin-bottom: 0.5rem;
+}
+
+h1.error {
+  background: linear-gradient(90deg, var(--accent-red), var(--accent-orange));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+h2 {
+  margin-top: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+@keyframes glow {
+  from { text-shadow: 0 0 10px var(--cyan); }
+  to { text-shadow: 0 0 25px var(--violet); }
+}
+
+@keyframes pulse {
+  from { text-shadow: 0 0 10px var(--accent-red); }
+  to { text-shadow: 0 0 25px var(--accent-orange); }
+}
+
+p {
+  color: var(--text-dim);
+  margin-top: 0.5rem;
+  line-height: 1.6;
+}
+
+.logo {
+  margin: 0.5rem 0;
+  opacity: 0.85;
+}
+
+.button {
+  margin-top: 2rem;
+  margin-inline: 0.5rem;
+  padding: 0.6rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+  border: none;
+}
+
+.primary-btn {
+  background: linear-gradient(90deg, var(--cyan), var(--violet));
+  color: #000;
+  box-shadow: 0 0 15px rgba(0, 255, 224, 0.4);
+}
+
+.primary-btn:hover {
+  opacity: 0.9;
+  transform: scale(1.03);
+}
+
+.danger-btn {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+
+.danger-btn:hover {
+  background: #991b1b;
+}
+
+.retry-btn {
+  background: linear-gradient(90deg, var(--cyan), var(--violet));
+  color: #000;
+  box-shadow: 0 0 15px rgba(0, 255, 224, 0.4);
+}
+
+.retry-btn:hover {
+  opacity: 0.9;
+  transform: scale(1.03);
+}
+
+.home-btn {
+  background: #1f2937;
+  color: var(--text-dim);
+}
+
+.home-btn:hover {
+  background: #374151;
+  color: var(--text-light);
+}
+
+.verify-text {
+  margin-top: 1.5rem;
+  font-size: 1rem;
+  color: var(--text-dim);
+}
+
+/* MetalMindTech Forge Insignia */
+#metalmindtech-insignia {
+  filter: drop-shadow(0 0 6px rgba(94, 234, 212, 0.6));
+  transition: transform 0.8s ease, filter 0.8s ease;
+  cursor: pointer;
+  animation: forgeShimmer 8s linear infinite, forgePulse 6s ease-in-out infinite;
+}
+
+#metalmindtech-insignia:hover {
+  transform: scale(1.08);
+  filter: drop-shadow(0 0 14px rgba(124, 58, 237, 0.9));
+}
+
+@keyframes forgeShimmer {
+  0% { filter: drop-shadow(0 0 6px rgba(94, 234, 212, 0.6)) hue-rotate(0deg); }
+  50% { filter: drop-shadow(0 0 8px rgba(124, 58, 237, 0.7)) hue-rotate(180deg); }
+  100% { filter: drop-shadow(0 0 6px rgba(94, 234, 212, 0.6)) hue-rotate(360deg); }
+}
+
+@keyframes forgePulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.06); opacity: 0.9; }
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  h1 { font-size: 1.8rem; }
+  h2 { font-size: 1rem; }
+  .button { 
+    width: 100%; 
+    max-width: 300px;
+    margin-top: 1rem;
+  }
+}

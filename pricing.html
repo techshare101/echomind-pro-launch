@@ -163,7 +163,30 @@
     }
 
     .upgrade-btn:active {
-      transform: translateY(0);
+      transform: translateY(0) scale(0.97);
+    }
+
+    /* 🔥 Forge Glow Pulse Animation */
+    @keyframes forgePulse {
+      0% {
+        box-shadow: 0 4px 12px rgba(94, 234, 212, 0.4),
+                    0 0 24px rgba(124, 58, 237, 0.2);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5),
+                    0 0 40px rgba(94, 234, 212, 0.3);
+        transform: scale(1.02);
+      }
+      100% {
+        box-shadow: 0 4px 12px rgba(94, 234, 212, 0.4),
+                    0 0 24px rgba(124, 58, 237, 0.2);
+        transform: scale(1);
+      }
+    }
+
+    .animate-forge-pulse {
+      animation: forgePulse 2.5s infinite ease-in-out;
     }
 
     .loading {
@@ -204,7 +227,7 @@
           <li><span class="checkmark">✓</span> Export & sync features</li>
         </ul>
 
-        <button class="upgrade-btn" id="monthly-btn">
+        <button class="upgrade-btn animate-forge-pulse" id="monthly-btn">
           Choose Monthly
         </button>
       </div>
@@ -225,7 +248,7 @@
           <li><span class="checkmark">✓</span> Lifetime updates</li>
         </ul>
 
-        <button class="upgrade-btn" id="annual-btn">
+        <button class="upgrade-btn animate-forge-pulse" id="annual-btn">
           Choose Annual
         </button>
       </div>
@@ -233,8 +256,8 @@
   </div>
 
   <script>
-    // Firebase Cloud Function endpoint (proxied through Vercel)
-    const CHECKOUT_ENDPOINT = "/api/createCheckoutSession";
+    // Firebase Cloud Function endpoint (unified API)
+    const CHECKOUT_ENDPOINT = "https://us-central1-echomind-pro-launch.cloudfunctions.net/api/createCheckoutSession";
 
     async function selectPlan(plan) {
       const button = document.getElementById(`${plan}-btn`);

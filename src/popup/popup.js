@@ -20,9 +20,9 @@ const proStatus = document.getElementById("proStatus");
 const upgradeMonthlyBtn = document.getElementById("upgradeMonthly");
 const upgradeAnnualBtn = document.getElementById("upgradeAnnual");
 
-// Firebase Cloud Functions endpoints (proxied through Vercel)
-const CHECKOUT_ENDPOINT = "/api/createCheckoutSession";
-const CHECK_SUBSCRIPTION_ENDPOINT = "/api/checkSubscription";
+// Firebase Cloud Functions endpoints (unified API)
+const CHECKOUT_ENDPOINT = "https://us-central1-echomind-pro-launch.cloudfunctions.net/api/createCheckoutSession";
+const CHECK_SUBSCRIPTION_ENDPOINT = "https://us-central1-echomind-pro-launch.cloudfunctions.net/api/checkSubscription";
 
 function showStatus(msg, type = "info") {
   statusEl.textContent = msg;
@@ -380,10 +380,180 @@ clearVaultBtn.addEventListener("click", async () => {
   showStatus("Vault cleared 🧹");
 });
 
-// ---------- settings panel ----------
-settingsBtn.addEventListener("click", () => {
-  settingsPanel.classList.toggle("hidden");
+// ===== Animated Settings Panel =====
+const mainPanel = document.getElementById('mainPanel');
+const manageSubBtn = document.getElementById('manageSubBtn');
+const backBtn = document.getElementById('backBtn');
+const PORTAL_ENDPOINT = "https://us-central1-echomind-pro-launch.cloudfunctions.net/api/createCustomerPortalSession";
+
+// Open Settings with slide animation
+settingsBtn.addEventListener('click', () => {
+  // Dashboard slides out left
+  mainPanel.classList.add('translate-x-[-100%]', 'opacity-0');
+  mainPanel.classList.remove('translate-x-0', 'opacity-100');
+
+  setTimeout(() => {
+    mainPanel.style.display = 'none';
+    settingsPanel.classList.remove('hidden');
+    // Settings slides in from right
+    setTimeout(() => {
+      settingsPanel.classList.remove('translate-x-full', 'opacity-0');
+      settingsPanel.classList.add('translate-x-0', 'opacity-100');
+    }, 30);
+  }, 250);
 });
+
+// Back to Dashboard with slide animation
+backBtn.addEventListener('click', () => {
+  // Settings slides out right
+  settingsPanel.classList.add('translate-x-full', 'opacity-0');
+  settingsPanel.classList.remove('translate-x-0', 'opacity-100');
+
+  setTimeout(() => {
+    settingsPanel.classList.add('hidden');
+    mainPanel.style.display = 'block';
+    // Dashboard glides in from left
+    setTimeout(() => {
+      mainPanel.classList.remove('translate-x-[-100%]', 'opacity-0');
+      mainPanel.classList.add('translate-x-0', 'opacity-100');
+    }, 30);
+  }, 300);
+});
+
+// 🌌 Forge Portal Overlay Elements
+const portalOverlay = document.getElementById('portalOverlay');
+const portalFrame = document.getElementById('portalFrame');
+const portalLoader = document.getElementById('portalLoader');
+const portalProgress = document.getElementById('portalProgress');
+const closePortalBtn = document.getElementById('closePortalBtn');
+
+// Open Portal Overlay with Loading Animation
+async function openPortalOverlay() {
+  try {
+    showStatus('Initializing Forge Portal...', 'info');
+    
+    // Get user email from localStorage with priority order
+    const userEmail = localStorage.getItem('echomind_pro_email') || 
+                      localStorage.getItem('userEmail') || 
+                      localStorage.getItem('user_email');
+    
+    console.log('🔍 Looking up portal for email:', userEmail);
+    
+    if (!userEmail || userEmail === 'publicuser@echomind.ai') {
+      showStatus('⚠️ Please complete a purchase first', 'error');
+      console.warn('No valid user email found in localStorage');
+      return;
+    }
+    
+    const response = await fetch(PORTAL_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email: userEmail }),
+    });
+
+    console.log('📡 Portal response status:', response.status);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ Portal error:', errorData);
+      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log('✅ Portal data received:', data);
+    
+    if (data.url) {
+      // Show overlay with loading animation
+      portalFrame.src = data.url;
+      portalOverlay.classList.remove('hidden');
+      
+      // Reset and show loader
+      portalProgress.style.width = '0%';
+      portalLoader.style.display = 'flex';
+      portalFrame.classList.remove('loaded');
+      
+      // Animate progress bar (simulated boot sequence)
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress += Math.random() * 15 + 5; // Random bursts between 5-20%
+        if (progress > 95) progress = 95; // Cap at 95% until iframe loads
+        portalProgress.style.width = `${progress}%`;
+      }, 200);
+      
+      // Wait for iframe to load
+      portalFrame.onload = () => {
+        clearInterval(progressInterval);
+        portalProgress.style.width = '100%';
+        
+        setTimeout(() => {
+          portalLoader.style.display = 'none';
+          portalFrame.classList.add('loaded');
+          showStatus('✅ Forge Portal ready', 'success');
+        }, 500);
+      };
+      
+      // Timeout fallback (if iframe doesn't fire onload)
+      setTimeout(() => {
+        if (portalLoader.style.display !== 'none') {
+          clearInterval(progressInterval);
+          portalProgress.style.width = '100%';
+          setTimeout(() => {
+            portalLoader.style.display = 'none';
+            portalFrame.classList.add('loaded');
+          }, 500);
+        }
+      }, 5000);
+      
+      // Flash success animation on button
+      manageSubBtn.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        manageSubBtn.style.transform = 'scale(1)';
+      }, 150);
+    } else {
+      throw new Error('No portal URL received from server');
+    }
+  } catch (error) {
+    console.error('❌ Error opening customer portal:', error);
+    showStatus(`❌ ${error.message || 'Unable to open portal'}`, 'error');
+    
+    // Show helpful message if customer not found
+    if (error.message.includes('Customer not found') || error.message.includes('404')) {
+      showStatus('❌ No subscription found. Please upgrade first.', 'error');
+    }
+  }
+}
+
+// Close Portal Overlay
+function closePortalOverlay() {
+  portalOverlay.classList.add('opacity-0');
+  portalOverlay.style.pointerEvents = 'none';
+  
+  setTimeout(() => {
+    portalOverlay.classList.add('hidden');
+    portalFrame.src = '';
+    portalFrame.classList.remove('loaded');
+    portalProgress.style.width = '0%';
+  }, 400);
+  
+  showStatus('Portal closed', 'info');
+}
+
+// Manage Subscription - Opens Forge Portal Overlay
+manageSubBtn.addEventListener('click', () => {
+  // Click feedback animation
+  manageSubBtn.style.transform = 'scale(0.97)';
+  setTimeout(() => {
+    manageSubBtn.style.transform = 'scale(1)';
+  }, 150);
+  
+  // Open portal overlay
+  openPortalOverlay();
+});
+
+// Close button handler
+closePortalBtn.addEventListener('click', closePortalOverlay);
 
 saveSettingsBtn.addEventListener("click", async () => {
   const settings = {
@@ -548,6 +718,18 @@ async function checkSubscriptionStatus() {
       console.log("No user email found, using public email for checkout");
     }
 
+    // Make the subscription check request
+    const response = await fetch(`${CHECK_SUBSCRIPTION_ENDPOINT}?email=${userEmail}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
     const data = await response.json();
 
     if (data.status === "active") {
@@ -556,6 +738,13 @@ async function checkSubscriptionStatus() {
       // Save to localStorage for quick access
       localStorage.setItem("isProActive", "true");
       localStorage.setItem("proActivatedAt", new Date().toISOString());
+      
+      // Save email for portal access (use data.email from response if available)
+      const emailToSave = data.email || userEmail;
+      if (emailToSave && emailToSave !== 'publicuser@echomind.ai') {
+        localStorage.setItem("echomind_pro_email", emailToSave);
+        console.log("💾 Saved user email for portal access:", emailToSave);
+      }
       
       // Show Pro badge in header
       proStatus?.classList.remove("hidden");
@@ -768,3 +957,66 @@ checkSubscriptionStatus().then(() => {
 });
 
 init();
+
+// ========== 🛡️ UI STATE RESET SAFEGUARD ==========
+
+/**
+ * Universal UI state reset function
+ * Ensures no overlays are blocking the main dashboard
+ * Call this if UI becomes unresponsive
+ */
+function resetUIState() {
+  console.log('🔄 Resetting UI state...');
+  
+  // Hide all overlay panels
+  const panels = ['settingsPanel', 'portalOverlay'];
+  panels.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.classList.add('hidden');
+      el.style.pointerEvents = 'none';
+      el.style.opacity = '0';
+      el.style.display = 'none';
+    }
+  });
+  
+  // Ensure main panel is visible and clickable
+  const main = document.getElementById('mainPanel');
+  if (main) {
+    main.classList.remove('hidden');
+    main.style.display = 'block';
+    main.style.pointerEvents = 'auto';
+    main.style.opacity = '1';
+    main.classList.remove('translate-x-[-100%]', 'opacity-0');
+    main.classList.add('translate-x-0', 'opacity-100');
+  }
+  
+  // Clear portal iframe
+  if (portalFrame) {
+    portalFrame.src = '';
+    portalFrame.classList.remove('loaded');
+  }
+  
+  console.log('✅ UI state reset complete');
+}
+
+// Enhanced Escape key handler - resets entire UI state
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    // Close portal if open
+    if (!portalOverlay.classList.contains('hidden')) {
+      closePortalOverlay();
+    }
+    // Close settings if open
+    else if (!settingsPanel.classList.contains('hidden')) {
+      backBtn.click();
+    }
+    // Otherwise, reset entire UI state as safeguard
+    else {
+      resetUIState();
+    }
+  }
+});
+
+// Expose reset function globally for debugging
+window.resetUIState = resetUIState;

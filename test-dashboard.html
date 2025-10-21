@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Dashboard Integration</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+      color: white;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 2rem;
+      background: linear-gradient(90deg, #5EEAD4, #3B82F6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .test-section {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(94, 234, 212, 0.2);
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      color: #5EEAD4;
+      margin-bottom: 15px;
+      font-size: 1.3rem;
+    }
+
+    .test-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    button {
+      background: linear-gradient(90deg, #5EEAD4, #3B82F6);
+      border: none;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      width: 100%;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.6);
+    }
+
+    .result {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 10px;
+      padding: 15px;
+      margin-top: 15px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .success {
+      color: #10b981;
+    }
+
+    .error {
+      color: #ef4444;
+    }
+
+    .info {
+      color: #94a3b8;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(94, 234, 212, 0.3);
+      background: rgba(15, 23, 42, 0.5);
+      color: white;
+      font-size: 1rem;
+      margin-bottom: 10px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #5EEAD4;
+    }
+
+    .endpoint-url {
+      background: rgba(15, 23, 42, 0.8);
+      padding: 10px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      color: #5EEAD4;
+      margin-bottom: 15px;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Dashboard Integration Test Suite</h1>
+
+    <!-- Test 1: Check Subscription -->
+    <div class="test-section">
+      <h2>1️⃣ Test checkSubscription</h2>
+      <div class="endpoint-url">
+        GET https://us-central1-echomind-pro-launch.cloudfunctions.net/checkSubscription
+      </div>
+      <input type="email" id="check-email" placeholder="Enter email (e.g., test@example.com)" value="demo@echomind.ai">
+      <div class="test-grid">
+        <button onclick="testCheckSubscription()">Test Check Subscription</button>
+      </div>
+      <div class="result" id="check-result"></div>
+    </div>
+
+    <!-- Test 2: Create Customer Portal -->
+    <div class="test-section">
+      <h2>2️⃣ Test createCustomerPortalSession</h2>
+      <div class="endpoint-url">
+        POST https://us-central1-echomind-pro-launch.cloudfunctions.net/createCustomerPortalSession
+      </div>
+      <input type="email" id="portal-email" placeholder="Enter email" value="demo@echomind.ai">
+      <input type="text" id="portal-customer" placeholder="Customer ID (optional)">
+      <div class="test-grid">
+        <button onclick="testCustomerPortal()">Test Customer Portal</button>
+      </div>
+      <div class="result" id="portal-result"></div>
+    </div>
+
+    <!-- Test 3: Full Dashboard Flow -->
+    <div class="test-section">
+      <h2>3️⃣ Test Full Dashboard Flow</h2>
+      <p class="info" style="margin-bottom: 15px;">
+        This will simulate the complete dashboard experience:
+        <br>1. Check subscription status
+        <br>2. Display plan details
+        <br>3. Test portal access
+      </p>
+      <input type="email" id="flow-email" placeholder="Enter email" value="demo@echomind.ai">
+      <div class="test-grid">
+        <button onclick="testFullFlow()">Run Full Test</button>
+        <button onclick="openDashboard()">Open Dashboard</button>
+      </div>
+      <div class="result" id="flow-result"></div>
+    </div>
+
+    <!-- Test 4: Webhook Simulation -->
+    <div class="test-section">
+      <h2>4️⃣ Webhook Events (Info)</h2>
+      <p class="info">
+        <strong>Supported Events:</strong><br>
+        ✅ checkout.session.completed<br>
+        ✅ payment_intent.succeeded<br>
+        ✅ invoice.payment_succeeded<br>
+        ✅ customer.subscription.updated<br>
+        ✅ customer.subscription.deleted
+      </p>
+      <p class="info" style="margin-top: 10px;">
+        <strong>Test with Stripe CLI:</strong><br>
+        <code style="color: #5EEAD4;">stripe listen --forward-to https://us-central1-echomind-pro-launch.cloudfunctions.net/stripeWebhook</code>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const CHECK_ENDPOINT = "https://us-central1-echomind-pro-launch.cloudfunctions.net/checkSubscription";
+    const PORTAL_ENDPOINT = "https://us-central1-echomind-pro-launch.cloudfunctions.net/createCustomerPortalSession";
+
+    async function testCheckSubscription() {
+      const resultDiv = document.getElementById('check-result');
+      const email = document.getElementById('check-email').value;
+      
+      resultDiv.innerHTML = '<span class="info">⏳ Testing...</span>';
+      
+      try {
+        const response = await fetch(`${CHECK_ENDPOINT}?email=${encodeURIComponent(email)}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+          resultDiv.innerHTML = `
+            <span class="success">✅ Success!</span><br><br>
+            <strong>Response:</strong><br>
+            ${JSON.stringify(data, null, 2)}
+          `;
+          
+          // Store email for other tests
+          localStorage.setItem('echomind_pro_email', email);
+        } else {
+          resultDiv.innerHTML = `
+            <span class="error">❌ Error ${response.status}</span><br><br>
+            ${JSON.stringify(data, null, 2)}
+          `;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<span class="error">❌ ${error.message}</span>`;
+      }
+    }
+
+    async function testCustomerPortal() {
+      const resultDiv = document.getElementById('portal-result');
+      const email = document.getElementById('portal-email').value;
+      const customerId = document.getElementById('portal-customer').value;
+      
+      resultDiv.innerHTML = '<span class="info">⏳ Creating portal session...</span>';
+      
+      try {
+        const body = customerId ? { customerId } : { email };
+        
+        const response = await fetch(PORTAL_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.url) {
+          resultDiv.innerHTML = `
+            <span class="success">✅ Portal session created!</span><br><br>
+            <strong>Portal URL:</strong><br>
+            <a href="${data.url}" target="_blank" style="color: #5EEAD4;">${data.url}</a><br><br>
+            <button onclick="window.open('${data.url}', '_blank')" style="margin-top: 10px;">
+              Open Portal in New Tab
+            </button>
+          `;
+        } else {
+          resultDiv.innerHTML = `
+            <span class="error">❌ Error ${response.status}</span><br><br>
+            ${JSON.stringify(data, null, 2)}
+          `;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<span class="error">❌ ${error.message}</span>`;
+      }
+    }
+
+    async function testFullFlow() {
+      const resultDiv = document.getElementById('flow-result');
+      const email = document.getElementById('flow-email').value;
+      
+      resultDiv.innerHTML = '<span class="info">⏳ Running full test flow...</span>';
+      
+      try {
+        // Step 1: Check subscription
+        resultDiv.innerHTML += '<br><br><strong>Step 1:</strong> Checking subscription...';
+        const checkResponse = await fetch(`${CHECK_ENDPOINT}?email=${encodeURIComponent(email)}`);
+        const checkData = await checkResponse.json();
+        
+        if (!checkResponse.ok) {
+          throw new Error('Failed to check subscription');
+        }
+        
+        resultDiv.innerHTML += '<br><span class="success">✅ Subscription checked</span>';
+        
+        // Step 2: Display results
+        resultDiv.innerHTML += '<br><br><strong>Step 2:</strong> Subscription Details:';
+        resultDiv.innerHTML += `<br>Status: ${checkData.active ? '✅ Active' : '⚠️ Inactive'}`;
+        resultDiv.innerHTML += `<br>Plan: ${checkData.plan_type || 'N/A'}`;
+        
+        if (checkData.period_end) {
+          const renewalDate = new Date(checkData.period_end * 1000).toLocaleDateString();
+          resultDiv.innerHTML += `<br>Renewal: ${renewalDate}`;
+        }
+        
+        // Step 3: Test portal access if active
+        if (checkData.active && checkData.customerId) {
+          resultDiv.innerHTML += '<br><br><strong>Step 3:</strong> Testing portal access...';
+          
+          const portalResponse = await fetch(PORTAL_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ customerId: checkData.customerId })
+          });
+          
+          const portalData = await portalResponse.json();
+          
+          if (portalResponse.ok && portalData.url) {
+            resultDiv.innerHTML += '<br><span class="success">✅ Portal access verified</span>';
+            resultDiv.innerHTML += `<br><br><button onclick="window.open('${portalData.url}', '_blank')">Open Customer Portal</button>`;
+          }
+        } else {
+          resultDiv.innerHTML += '<br><br><span class="info">ℹ️ No active subscription - portal not available</span>';
+        }
+        
+        resultDiv.innerHTML += '<br><br><span class="success">🎉 Full flow test completed!</span>';
+        
+        // Store email
+        localStorage.setItem('echomind_pro_email', email);
+        
+      } catch (error) {
+        resultDiv.innerHTML += `<br><br><span class="error">❌ ${error.message}</span>`;
+      }
+    }
+
+    function openDashboard() {
+      const email = document.getElementById('flow-email').value;
+      localStorage.setItem('echomind_pro_email', email);
+      window.open('dashboard.html', '_blank');
+    }
+
+    // Auto-load email from localStorage
+    window.addEventListener('load', () => {
+      const savedEmail = localStorage.getItem('echomind_pro_email');
+      if (savedEmail) {
+        document.getElementById('check-email').value = savedEmail;
+        document.getElementById('portal-email').value = savedEmail;
+        document.getElementById('flow-email').value = savedEmail;
+      }
+    });
+  </script>
+</body>
+</html>

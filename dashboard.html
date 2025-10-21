@@ -3,85 +3,288 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EchoMind Dashboard</title>
+    <title>EchoMind Pro Dashboard</title>
     <link rel="icon" href="/favicon.ico" />
     <style>
-      body {
+      * {
         margin: 0;
-        font-family: "Inter", sans-serif;
-        background: radial-gradient(circle at top, #0a0b0f, #0e1117);
-        color: #e8e8e8;
-        text-align: center;
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-        justify-content: center;
+        padding: 0;
+        box-sizing: border-box;
       }
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        color: white;
+      }
+
+      .container {
+        max-width: 800px;
+        width: 100%;
+      }
+
+      .dashboard-card {
+        background: rgba(30, 41, 59, 0.6);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(94, 234, 212, 0.2);
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      }
+
       h1 {
-        font-size: 2rem;
-        background: linear-gradient(90deg, #7b61ff, #00ffc6);
-        background-clip: text;
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(90deg, #5EEAD4, #3B82F6);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        color: transparent;
-        margin-bottom: 0.2em;
+        background-clip: text;
+        margin-bottom: 10px;
+        text-align: center;
       }
-      .plan {
-        color: #00ffc6;
-        margin-bottom: 1em;
-        font-weight: 500;
+
+      .subtitle {
+        text-align: center;
+        color: #94a3b8;
+        margin-bottom: 30px;
+        font-size: 1.1rem;
       }
-      .tools {
-        display: flex;
-        gap: 1em;
-        justify-content: center;
-        flex-wrap: wrap;
-        margin-top: 2em;
+
+      .status-section {
+        background: rgba(15, 23, 42, 0.5);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+        text-align: center;
       }
+
+      .status-badge {
+        display: inline-block;
+        padding: 8px 20px;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      .status-badge.active {
+        background: linear-gradient(90deg, #10b981, #059669);
+        color: white;
+      }
+
+      .status-badge.inactive {
+        background: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+        border: 1px solid #ef4444;
+      }
+
+      .status-badge.loading {
+        background: rgba(94, 234, 212, 0.2);
+        color: #5EEAD4;
+        border: 1px solid #5EEAD4;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+      }
+
+      .plan-details {
+        color: #e2e8f0;
+        font-size: 1.1rem;
+        margin-bottom: 10px;
+      }
+
+      .renewal-info {
+        color: #94a3b8;
+        font-size: 0.9rem;
+      }
+
+      .actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 30px;
+      }
+
       button {
-        background: linear-gradient(90deg, #7b61ff, #00ffc6);
+        background: linear-gradient(90deg, #5EEAD4, #3B82F6);
         border: none;
         color: white;
+        padding: 15px 25px;
+        border-radius: 12px;
+        font-size: 1rem;
         font-weight: 600;
-        padding: 0.8em 1.8em;
-        border-radius: 10px;
         cursor: pointer;
-        transition: transform 0.2s, opacity 0.3s;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
       }
+
       button:hover {
-        transform: translateY(-3px);
-        opacity: 0.9;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.6);
       }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      button.secondary {
+        background: rgba(71, 85, 105, 0.5);
+        box-shadow: none;
+      }
+
+      button.secondary:hover {
+        background: rgba(71, 85, 105, 0.7);
+        box-shadow: 0 4px 12px rgba(71, 85, 105, 0.4);
+      }
+
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 1s ease-in-out infinite;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .error-message {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid #ef4444;
+        color: #fca5a5;
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 20px;
+        text-align: center;
+      }
+
       footer {
-        position: absolute;
-        bottom: 1em;
-        width: 100%;
-        font-size: 0.8rem;
-        color: #888;
+        text-align: center;
+        margin-top: 30px;
+        color: #64748b;
+        font-size: 0.9rem;
+      }
+
+      /* 🚀 Cinematic Entry Animation */
+      .dashboard-card {
+        animation: forgeEntry 1.2s ease-out forwards;
+      }
+      
+      @keyframes forgeEntry {
+        0% {
+          opacity: 0;
+          transform: translateX(-100px) scale(0.95);
+        }
+        60% {
+          opacity: 0.8;
+          transform: translateX(20px) scale(1.02);
+        }
+        100% {
+          opacity: 1;
+          transform: translateX(0) scale(1);
+        }
+      }
+      
+      /* Welcome flash for new Pro users */
+      .welcome-flash {
+        animation: welcomePulse 2s ease-in-out 1;
+      }
+      
+      @keyframes welcomePulse {
+        0%, 100% { 
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); 
+        }
+        50% { 
+          box-shadow: 0 20px 60px rgba(94, 234, 212, 0.4), 0 0 30px rgba(94, 234, 212, 0.3); 
+        }
+      }
+
+      @media (max-width: 768px) {
+        h1 {
+          font-size: 2rem;
+        }
+        
+        .actions {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
   <body>
-    <h1>🧠 EchoMind Pro Dashboard</h1>
-    <p class="plan" id="plan-status">Checking subscription...</p>
+    <div class="container">
+      <div class="dashboard-card">
+        <h1>⚡ EchoMind Pro Dashboard</h1>
+        <p class="subtitle">Manage your subscription and access premium features</p>
 
-    <div class="tools">
-      <button id="summarize">⚡ Summarize</button>
-      <button id="explain">💡 Explain</button>
-      <button id="vault">🔐 Vault</button>
-      <button id="logout">🚪 Logout</button>
+        <div class="status-section" id="status-section">
+          <div class="status-badge loading" id="status-badge">
+            <span class="loading-spinner"></span> Checking subscription...
+          </div>
+          <div class="plan-details" id="plan-details"></div>
+          <div class="renewal-info" id="renewal-info"></div>
+        </div>
+
+        <div class="actions">
+          <button id="manage-btn" style="display: none;">
+            💳 Manage Subscription
+          </button>
+          <button id="upgrade-btn" style="display: none;">
+            🚀 Upgrade to Pro
+          </button>
+          <button class="secondary" id="vault-btn">
+            🔐 Memory Vault
+          </button>
+          <button class="secondary" id="logout-btn">
+            🚪 Logout
+          </button>
+        </div>
+
+        <div id="error-container"></div>
+
+        <footer>© 2025 EchoMind Pro — Powered by MetalMindTech</footer>
+      </div>
     </div>
 
-    <footer>© 2025 MetalMindTech — Forge Edition</footer>
-
     <script>
-      async function checkSub() {
+      const CHECKOUT_ENDPOINT = "https://us-central1-echomind-pro-launch.cloudfunctions.net/api/checkSubscription";
+      const PORTAL_ENDPOINT = "https://us-central1-echomind-pro-launch.cloudfunctions.net/api/createCustomerPortalSession";
+      
+      let subscriptionData = null;
+
+      async function checkSubscription() {
         try {
-          // Get email from localStorage or use demo
-          const email = localStorage.getItem("echomind_pro_email") || "demo@echomind.ai";
+          // Get email from URL params or localStorage
+          const urlParams = new URLSearchParams(window.location.search);
+          const sessionId = urlParams.get('session_id');
+          let email = localStorage.getItem("echomind_pro_email");
+          
+          // If coming from checkout success, extract email from session
+          if (sessionId && !email) {
+            email = "demo@echomind.ai"; // Fallback
+          }
+          
+          if (!email) {
+            throw new Error("No email found. Please login again.");
+          }
           
           const res = await fetch(
-            `/api/checkSubscription?email=${encodeURIComponent(email)}`
+            `${CHECKOUT_ENDPOINT}?email=${encodeURIComponent(email)}`
           );
           
           if (!res.ok) {
@@ -90,22 +293,186 @@
           
           const data = await res.json();
           console.log("Subscription data:", data);
+          subscriptionData = data;
           
-          document.getElementById("plan-status").textContent = data.active
-            ? `💎 Pro Plan Active (${data.plan})` 
-            : "⚠️ Free Plan — Upgrade to unlock Forge Mode";
+          // Update UI based on subscription status
+          const statusBadge = document.getElementById("status-badge");
+          const planDetails = document.getElementById("plan-details");
+          const renewalInfo = document.getElementById("renewal-info");
+          const manageBtn = document.getElementById("manage-btn");
+          const upgradeBtn = document.getElementById("upgrade-btn");
+          
+          if (data.active) {
+            // Active subscription
+            statusBadge.className = "status-badge active";
+            statusBadge.innerHTML = "✅ Active";
+            
+            const planName = data.plan_type === "annual" ? "Annual" : "Monthly";
+            planDetails.textContent = `💎 EchoMind Pro ${planName}`;
+            
+            if (data.period_end) {
+              const renewalDate = new Date(data.period_end * 1000).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              });
+              renewalInfo.textContent = `Renews on ${renewalDate}`;
+            }
+            
+            // Show manage button
+            manageBtn.style.display = "block";
+            upgradeBtn.style.display = "none";
+          } else {
+            // No active subscription
+            statusBadge.className = "status-badge inactive";
+            statusBadge.innerHTML = "⚠️ Free Plan";
+            
+            planDetails.textContent = "Upgrade to unlock unlimited AI summaries";
+            renewalInfo.textContent = "";
+            
+            // Show upgrade button
+            manageBtn.style.display = "none";
+            upgradeBtn.style.display = "block";
+          }
         } catch (err) {
           console.error("Error checking subscription:", err);
-          document.getElementById("plan-status").textContent = "⚠️ Could not verify subscription - " + err.message;
+          
+          const statusBadge = document.getElementById("status-badge");
+          statusBadge.className = "status-badge inactive";
+          statusBadge.innerHTML = "❌ Error";
+          
+          const errorContainer = document.getElementById("error-container");
+          errorContainer.innerHTML = `
+            <div class="error-message">
+              ❌ ${err.message}
+            </div>
+          `;
         }
       }
-      checkSub();
 
-      document.getElementById("vault").onclick = () =>
-        (window.location.href = "/vault.html");
+      async function openCustomerPortal() {
+        const manageBtn = document.getElementById("manage-btn");
+        const originalText = manageBtn.textContent;
+        
+        try {
+          manageBtn.disabled = true;
+          manageBtn.innerHTML = '<span class="loading-spinner"></span> Opening...';
+          
+          const email = localStorage.getItem("echomind_pro_email");
+          const customerId = subscriptionData?.customerId;
+          
+          const response = await fetch(PORTAL_ENDPOINT, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ 
+              customerId: customerId,
+              email: email 
+            }),
+          });
+          
+          if (!response.ok) {
+            throw new Error("Failed to create portal session");
+          }
+          
+          const data = await response.json();
+          
+          if (data.url) {
+            // Redirect to Stripe Customer Portal
+            window.location.href = data.url;
+          } else {
+            throw new Error("No portal URL returned");
+          }
+        } catch (error) {
+          console.error("Error opening customer portal:", error);
+          alert("Unable to open billing portal. Please try again or contact support.");
+          
+          manageBtn.disabled = false;
+          manageBtn.textContent = originalText;
+        }
+      }
+
+      // Initialize
+      checkSubscription();
       
-      document.getElementById("logout").onclick = () => {
+      // 🎆 Welcome Flash for New Pro Users
+      function checkForWelcomeFlash() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const fromSuccess = urlParams.get('from') === 'success';
+        const recentActivation = localStorage.getItem('echomind_pro_activated_at');
+        
+        if (fromSuccess || (recentActivation && isRecentActivation(recentActivation))) {
+          const dashboardCard = document.querySelector('.dashboard-card');
+          
+          setTimeout(() => {
+            dashboardCard.classList.add('welcome-flash');
+            
+            // Add welcome message
+            const welcomeMessage = document.createElement('div');
+            welcomeMessage.style.cssText = `
+              position: fixed;
+              top: 20px;
+              right: 20px;
+              background: linear-gradient(45deg, #10b981, #059669);
+              color: white;
+              padding: 12px 20px;
+              border-radius: 10px;
+              font-weight: 600;
+              box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+              z-index: 1000;
+              opacity: 0;
+              transform: translateX(100px);
+              transition: all 0.6s ease-out;
+            `;
+            welcomeMessage.textContent = '🎉 Welcome to the Forge Cockpit!';
+            document.body.appendChild(welcomeMessage);
+            
+            setTimeout(() => {
+              welcomeMessage.style.opacity = '1';
+              welcomeMessage.style.transform = 'translateX(0)';
+            }, 500);
+            
+            setTimeout(() => {
+              welcomeMessage.style.opacity = '0';
+              welcomeMessage.style.transform = 'translateX(100px)';
+              setTimeout(() => welcomeMessage.remove(), 600);
+            }, 4000);
+            
+            // Clear the recent activation flag
+            if (!fromSuccess) {
+              localStorage.removeItem('echomind_pro_activated_at');
+            }
+          }, 800);
+        }
+      }
+      
+      function isRecentActivation(timestamp) {
+        const activatedAt = new Date(timestamp);
+        const now = new Date();
+        const timeDiff = now - activatedAt;
+        const fiveMinutes = 5 * 60 * 1000;
+        
+        return timeDiff < fiveMinutes;
+      }
+      
+      // Check for welcome flash after a brief delay
+      setTimeout(checkForWelcomeFlash, 1000);
+
+      // Event listeners
+      document.getElementById("manage-btn").onclick = openCustomerPortal;
+      
+      document.getElementById("upgrade-btn").onclick = () => {
+        window.location.href = "/pricing.html";
+      };
+      
+      document.getElementById("vault-btn").onclick = () => {
+        window.location.href = "/vault.html";
+      };
+      
+      document.getElementById("logout-btn").onclick = () => {
         if (confirm("Are you sure you want to logout?")) {
+          localStorage.removeItem("echomind_pro_email");
           window.location.href = "/";
         }
       };
