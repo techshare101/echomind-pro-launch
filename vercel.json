@@ -3,10 +3,6 @@
     {
       "source": "/api/:path*",
       "destination": "https://us-central1-echomind-pro-launch.cloudfunctions.net/:path*"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
     }
   ],
   "cleanUrls": true,

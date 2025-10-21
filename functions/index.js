@@ -1,9 +1,11 @@
 const {onRequest} = require("firebase-functions/v2/https");
+const {onDocumentCreated} = require("firebase-functions/v2/firestore");
 const {defineSecret} = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const Stripe = require("stripe");
 const express = require("express");
 const cors = require("./corsConfig");
+const nodemailer = require("nodemailer");
 
 // Load environment variables from .env file (for local development)
 require("dotenv").config();
@@ -21,12 +23,8 @@ const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 const stripeWebhookSecret = defineSecret("STRIPE_WEBHOOK_SECRET");
 const stripePriceMonthly = defineSecret("STRIPE_PRICE_ID_MONTHLY");
 const stripePriceAnnual = defineSecret("STRIPE_PRICE_ID_ANNUAL");
-
-// 🔍 Runtime verification (logs on function cold start)
-console.log("🔍 Stripe key loaded:", process.env.STRIPE_SECRET_KEY ? "✅ present" : "❌ missing");
-console.log("🔍 Webhook secret loaded:", process.env.STRIPE_WEBHOOK_SECRET ? "✅ present" : "❌ missing");
-console.log("🔍 Monthly price ID loaded:", process.env.STRIPE_PRICE_ID_MONTHLY ? "✅ present" : "❌ missing");
-console.log("🔍 Annual price ID loaded:", process.env.STRIPE_PRICE_ID_ANNUAL ? "✅ present" : "❌ missing");
+const contactEmail = defineSecret("CONTACT_EMAIL");
+const contactEmailPassword = defineSecret("CONTACT_EMAIL_PASSWORD");
 
 // Stripe webhook handler
 exports.stripeWebhook = onRequest(
@@ -502,6 +500,264 @@ exports.createCustomerPortalSession = onRequest(
       } catch (error) {
         console.error("❌ Error creating customer portal:", error);
         return res.status(500).json({error: error.message});
+      }
+    },
+);
+
+// 📧 Contact Form Email Notification
+// Triggers when a new document is created in contact_messages collection
+exports.sendContactEmail = onDocumentCreated(
+    {
+      document: "contact_messages/{messageId}",
+      region: "us-central1",
+      secrets: [contactEmail, contactEmailPassword],
+    },
+    async (event) => {
+      try {
+        const messageData = event.data.data();
+        const messageId = event.params.messageId;
+
+        // Safely extract data with defaults
+        const name = messageData.name || "Unknown User";
+        const email = messageData.email || "no-email@provided.com";
+        const message = messageData.message || "(no message)";
+        const source = messageData.source || "dashboard";
+
+        console.log("📧 New contact message received:", messageId);
+        console.log("📧 From:", name, email);
+
+        // Get secret values
+        const senderEmail = contactEmail.value();
+        const senderPassword = contactEmailPassword.value();
+
+        if (!senderEmail || !senderPassword) {
+          throw new Error("Missing email credentials");
+        }
+
+        // Create transporter
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: senderEmail,
+            pass: senderPassword,
+          },
+        });
+
+        // Format timestamp
+        const timestamp = messageData.timestamp ?
+          messageData.timestamp.toDate().toLocaleString("en-US", {
+            dateStyle: "full",
+            timeStyle: "long",
+          }) :
+          new Date().toLocaleString("en-US", {
+            dateStyle: "full",
+            timeStyle: "long",
+          });
+
+        // Email options
+        const mailOptions = {
+          from: `"EchoMind Pro" <${senderEmail}>`,
+          to: "contact@metalmindtech.com",
+          subject: `📬 New EchoMind Contact: ${name}`,
+          text: `
+New message from EchoMind Pro Contact Form
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Name: ${name}
+Email: ${email}
+Source: ${source}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Message:
+${message}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Timestamp: ${timestamp}
+Message ID: ${messageId}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Reply to: ${email}
+          `,
+          html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 0 auto; }
+    .header { background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%); color: white; padding: 30px; text-align: center; }
+    .header h1 { margin: 0; font-size: 24px; }
+    .content { background: #f8fafc; padding: 30px; }
+    .field { margin-bottom: 20px; }
+    .label { font-weight: 600; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .value { margin-top: 5px; font-size: 16px; color: #1e293b; }
+    .message-box { background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #8b5cf6; margin: 20px 0; white-space: pre-wrap; }
+    .footer { text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 14px; }
+    .reply-button { display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📬 New Contact Message</h1>
+      <p style="margin: 10px 0 0 0; opacity: 0.9;">EchoMind Pro Dashboard</p>
+    </div>
+    <div class="content">
+      <div class="field">
+        <div class="label">From</div>
+        <div class="value">${name}</div>
+      </div>
+      <div class="field">
+        <div class="label">Email</div>
+        <div class="value"><a href="mailto:${email}" style="color: #8b5cf6;">${email}</a></div>
+      </div>
+      <div class="field">
+        <div class="label">Source</div>
+        <div class="value">${source}</div>
+      </div>
+      <div class="field">
+        <div class="label">Message</div>
+        <div class="message-box">${message}</div>
+      </div>
+      <div class="field">
+        <div class="label">Timestamp</div>
+        <div class="value">${timestamp}</div>
+      </div>
+      <div style="text-align: center;">
+        <a href="mailto:${email}" class="reply-button">Reply to ${name}</a>
+      </div>
+      <div class="footer">
+        <p>Message ID: ${messageId}</p>
+        <p>© 2025 EchoMind Pro — Powered by MetalMindTech</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+          `,
+        };
+
+        // Send notification email to MetalMindTech
+        await transporter.sendMail(mailOptions);
+        console.log("✅ Contact email sent successfully to contact@metalmindtech.com");
+
+        // Send auto-reply confirmation to user
+        const autoReplyOptions = {
+          from: `"EchoMind Pro" <${senderEmail}>`,
+          to: email,
+          subject: "✅ We received your message - EchoMind Pro",
+          text: `
+Hi ${name},
+
+Thank you for contacting EchoMind Pro!
+
+We've received your message and our team will review it shortly. We typically respond within 24 hours.
+
+Your message:
+"${message}"
+
+If you have any urgent questions, you can also reach us directly at contact@metalmindtech.com.
+
+Best regards,
+The EchoMind Pro Team
+Powered by MetalMindTech
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+This is an automated confirmation. Please do not reply to this email.
+          `,
+          html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 0 auto; }
+    .header { background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%); color: white; padding: 40px 30px; text-align: center; }
+    .header h1 { margin: 0; font-size: 28px; font-weight: 700; }
+    .header p { margin: 10px 0 0 0; opacity: 0.95; font-size: 16px; }
+    .content { background: #ffffff; padding: 40px 30px; }
+    .greeting { font-size: 18px; color: #1e293b; margin-bottom: 20px; }
+    .message-box { background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #8b5cf6; margin: 25px 0; }
+    .message-label { font-weight: 600; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+    .message-text { color: #475569; font-style: italic; line-height: 1.8; }
+    .info-box { background: #ecfdf5; border: 1px solid #10b981; border-radius: 8px; padding: 20px; margin: 25px 0; }
+    .info-box p { margin: 0; color: #065f46; }
+    .footer { background: #f8fafc; padding: 30px; text-align: center; color: #64748b; font-size: 14px; border-top: 1px solid #e2e8f0; }
+    .footer p { margin: 5px 0; }
+    .contact-link { color: #8b5cf6; text-decoration: none; font-weight: 600; }
+    .contact-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>✅ Message Received</h1>
+      <p>We'll get back to you soon!</p>
+    </div>
+    <div class="content">
+      <div class="greeting">Hi ${name},</div>
+      <p>Thank you for contacting <strong>EchoMind Pro</strong>!</p>
+      <p>We've received your message and our team will review it shortly. We typically respond within <strong>24 hours</strong>.</p>
+      
+      <div class="message-box">
+        <div class="message-label">Your Message</div>
+        <div class="message-text">"${message}"</div>
+      </div>
+
+      <div class="info-box">
+        <p><strong>💡 Need immediate help?</strong></p>
+        <p>You can reach us directly at <a href="mailto:contact@metalmindtech.com" class="contact-link">contact@metalmindtech.com</a></p>
+      </div>
+
+      <p style="margin-top: 30px; color: #64748b;">
+        Best regards,<br>
+        <strong style="color: #1e293b;">The EchoMind Pro Team</strong><br>
+        <span style="font-size: 13px;">Powered by MetalMindTech</span>
+      </p>
+    </div>
+    <div class="footer">
+      <p><strong>EchoMind Pro</strong> — AI-Powered Content Intelligence</p>
+      <p style="font-size: 12px; margin-top: 15px;">This is an automated confirmation. Please do not reply to this email.</p>
+      <p style="font-size: 12px;">© 2025 MetalMindTech. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+          `,
+        };
+
+        try {
+          await transporter.sendMail(autoReplyOptions);
+          console.log("✅ Auto-reply sent to user:", messageData.email);
+        } catch (replyError) {
+          console.error("⚠️ Auto-reply failed (non-critical):", replyError.message);
+          // Don't fail the whole function if auto-reply fails
+        }
+
+        // Update message status in Firestore
+        await event.data.ref.update({
+          emailSent: true,
+          emailSentAt: admin.firestore.FieldValue.serverTimestamp(),
+          autoReplySent: true,
+        });
+
+        return {success: true};
+      } catch (error) {
+        console.error("❌ Error sending contact email:", error);
+        
+        // Update message with error status
+        try {
+          await event.data.ref.update({
+            emailSent: false,
+            emailError: error.message,
+            emailErrorAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        } catch (updateError) {
+          console.error("❌ Error updating message status:", updateError);
+        }
+
+        // Don't throw - we don't want to retry email sends
+        return {success: false, error: error.message};
       }
     },
 );
