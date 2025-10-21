@@ -427,10 +427,10 @@ const portalLoader = document.getElementById('portalLoader');
 const portalProgress = document.getElementById('portalProgress');
 const closePortalBtn = document.getElementById('closePortalBtn');
 
-// Open Portal Overlay with Loading Animation
-async function openPortalOverlay() {
+// Open Portal in New Tab (Stripe doesn't allow iframe embedding)
+async function openPortalInNewTab() {
   try {
-    showStatus('Initializing Forge Portal...', 'info');
+    showStatus('Opening Stripe portal...', 'info');
     
     // Get user email from localStorage with priority order
     const userEmail = localStorage.getItem('echomind_pro_email') || 
@@ -465,52 +465,10 @@ async function openPortalOverlay() {
     console.log('✅ Portal data received:', data);
     
     if (data.url) {
-      // Show overlay with loading animation
-      portalFrame.src = data.url;
-      portalOverlay.classList.remove('hidden');
-      
-      // Reset and show loader
-      portalProgress.style.width = '0%';
-      portalLoader.style.display = 'flex';
-      portalFrame.classList.remove('loaded');
-      
-      // Animate progress bar (simulated boot sequence)
-      let progress = 0;
-      const progressInterval = setInterval(() => {
-        progress += Math.random() * 15 + 5; // Random bursts between 5-20%
-        if (progress > 95) progress = 95; // Cap at 95% until iframe loads
-        portalProgress.style.width = `${progress}%`;
-      }, 200);
-      
-      // Wait for iframe to load
-      portalFrame.onload = () => {
-        clearInterval(progressInterval);
-        portalProgress.style.width = '100%';
-        
-        setTimeout(() => {
-          portalLoader.style.display = 'none';
-          portalFrame.classList.add('loaded');
-          showStatus('✅ Forge Portal ready', 'success');
-        }, 500);
-      };
-      
-      // Timeout fallback (if iframe doesn't fire onload)
-      setTimeout(() => {
-        if (portalLoader.style.display !== 'none') {
-          clearInterval(progressInterval);
-          portalProgress.style.width = '100%';
-          setTimeout(() => {
-            portalLoader.style.display = 'none';
-            portalFrame.classList.add('loaded');
-          }, 500);
-        }
-      }, 5000);
-      
-      // Flash success animation on button
-      manageSubBtn.style.transform = 'scale(0.95)';
-      setTimeout(() => {
-        manageSubBtn.style.transform = 'scale(1)';
-      }, 150);
+      // Open Stripe portal in new tab
+      console.log('🚀 Opening Stripe portal in new tab:', data.url);
+      chrome.tabs.create({ url: data.url });
+      showStatus('✅ Portal opened in new tab', 'success');
     } else {
       throw new Error('No portal URL received from server');
     }
@@ -540,7 +498,7 @@ function closePortalOverlay() {
   showStatus('Portal closed', 'info');
 }
 
-// Manage Subscription - Opens Forge Portal Overlay
+// Manage Subscription - Opens Stripe Portal in New Tab
 manageSubBtn.addEventListener('click', () => {
   // Click feedback animation
   manageSubBtn.style.transform = 'scale(0.97)';
@@ -548,8 +506,8 @@ manageSubBtn.addEventListener('click', () => {
     manageSubBtn.style.transform = 'scale(1)';
   }, 150);
   
-  // Open portal overlay
-  openPortalOverlay();
+  // Open portal in new tab (Stripe doesn't allow iframe embedding)
+  openPortalInNewTab();
 });
 
 // Close button handler
@@ -1020,3 +978,216 @@ document.addEventListener('keydown', (e) => {
 
 // Expose reset function globally for debugging
 window.resetUIState = resetUIState;
+
+// ========== 🌟 DYNAMIC PLAN BADGE SYSTEM ==========
+
+/**
+ * Updates the plan badge dynamically based on user's subscription
+ * Supports: starter, pro, annual plans with different color schemes
+ */
+let planBadgeListener = null; // Store listener for cleanup
+
+async function updatePlanBadge() {
+  const badge = document.getElementById('planBadge');
+  const nameEl = document.getElementById('planName');
+  const statusEl = document.getElementById('planStatus');
+  const manageBtn = document.getElementById('planManageBtn');
+  const proBox = document.getElementById('proBox');
+
+  if (!badge || !nameEl || !statusEl || !manageBtn) {
+    console.warn('⚠️ Plan badge elements not found');
+    return;
+  }
+
+  try {
+    // Get user email from localStorage
+    const userEmail = localStorage.getItem('echomind_pro_email') || 
+                      localStorage.getItem('userEmail') || 
+                      localStorage.getItem('user_email');
+
+    if (!userEmail || userEmail === 'publicuser@echomind.ai') {
+      // No valid user - show upgrade box
+      badge.classList.add('hidden');
+      if (proBox) proBox.classList.remove('hidden');
+      console.log('📦 No subscription - showing upgrade box');
+      return;
+    }
+
+    // Check subscription status from localStorage (set by checkSubscriptionStatus)
+    const isPro = localStorage.getItem('echomind_pro_status') === 'true';
+    const planType = localStorage.getItem('echomind_plan_type') || 'starter';
+
+    console.log('🔍 Plan badge update:', { isPro, planType, userEmail });
+
+    if (!isPro) {
+      // Free tier - show upgrade box
+      badge.classList.add('hidden');
+      if (proBox) proBox.classList.remove('hidden');
+      return;
+    }
+
+    // User has active subscription - show badge, hide upgrade box
+    badge.classList.remove('hidden');
+    if (proBox) proBox.classList.add('hidden');
+
+    // Configure badge based on plan type
+    let config = {
+      text: 'Starter Plan',
+      status: 'Free Tier Active',
+      className: 'starter',
+      showManage: false
+    };
+
+    if (planType === 'monthly' || planType === 'pro') {
+      config = {
+        text: 'Pro Plan',
+        status: 'Monthly Subscription Active',
+        className: 'pro',
+        showManage: true
+      };
+    } else if (planType === 'annual' || planType === 'yearly') {
+      config = {
+        text: 'Annual Plan',
+        status: 'Annual Subscription Active',
+        className: 'annual',
+        showManage: true
+      };
+    }
+
+    // Apply styles
+    badge.className = `plan-badge ${config.className}`;
+    nameEl.textContent = `EchoMind ${config.text}`;
+    statusEl.textContent = config.status;
+
+    // Show/hide manage button
+    if (config.showManage) {
+      manageBtn.style.display = 'block';
+      manageBtn.onclick = () => {
+        console.log(`🚀 Opening Stripe portal for ${config.text}`);
+        openPortalInNewTab();
+      };
+    } else {
+      manageBtn.style.display = 'none';
+    }
+
+    console.log(`✅ Plan badge updated: ${config.text}`);
+
+  } catch (err) {
+    console.error('❌ Error updating plan badge:', err);
+    // Fallback to starter
+    badge.classList.remove('hidden');
+    badge.className = 'plan-badge starter';
+    nameEl.textContent = 'EchoMind Starter';
+    statusEl.textContent = 'Free tier active';
+    manageBtn.style.display = 'none';
+  }
+}
+
+/**
+ * Sets up real-time Firestore listener for plan changes
+ * Updates badge instantly when subscription changes (no reload needed)
+ */
+function setupPlanBadgeListener() {
+  // Clean up existing listener
+  if (planBadgeListener) {
+    planBadgeListener();
+    planBadgeListener = null;
+  }
+
+  const userEmail = localStorage.getItem('echomind_pro_email') || 
+                    localStorage.getItem('userEmail') || 
+                    localStorage.getItem('user_email');
+
+  if (!userEmail || userEmail === 'publicuser@echomind.ai') {
+    console.log('📦 No user email - skipping Firestore listener');
+    return;
+  }
+
+  try {
+    // Listen to user's subscription document in Firestore
+    const db = firebase.firestore();
+    const docRef = db.collection('user_subscription_status').doc(userEmail);
+
+    console.log('👂 Setting up real-time plan badge listener for:', userEmail);
+
+    planBadgeListener = docRef.onSnapshot((doc) => {
+      if (doc.exists) {
+        const data = doc.data();
+        console.log('🔄 Subscription data updated:', data);
+
+        // Update localStorage
+        localStorage.setItem('echomind_pro_status', data.isPro ? 'true' : 'false');
+        localStorage.setItem('echomind_plan_type', data.planType || 'starter');
+        localStorage.setItem('echomind_pro_email', userEmail);
+
+        // Update badge immediately
+        updatePlanBadge();
+
+        // Show notification if plan changed
+        if (data.isPro) {
+          showStatus(`✅ ${data.planType === 'annual' ? 'Annual' : 'Pro'} plan active`, 'success');
+        }
+      } else {
+        console.log('📭 No subscription document found');
+        localStorage.setItem('echomind_pro_status', 'false');
+        localStorage.setItem('echomind_plan_type', 'starter');
+        updatePlanBadge();
+      }
+    }, (error) => {
+      console.error('❌ Firestore listener error:', error);
+    });
+
+    console.log('✅ Real-time plan badge listener active');
+
+  } catch (err) {
+    console.error('❌ Error setting up Firestore listener:', err);
+  }
+}
+
+// Initialize plan badge on load
+updatePlanBadge();
+
+// Set up real-time listener after subscription check
+checkSubscriptionStatus().then(() => {
+  setupPlanBadgeListener();
+  celebrateProActivation();
+});
+
+// Update Settings "Manage Subscription" button to redirect to dashboard
+const settingsManageBtn = document.getElementById('manageSubBtn');
+if (settingsManageBtn) {
+  // Remove old listener and add new one
+  const newManageBtn = settingsManageBtn.cloneNode(true);
+  settingsManageBtn.parentNode.replaceChild(newManageBtn, settingsManageBtn);
+  
+  newManageBtn.addEventListener('click', () => {
+    console.log('🔄 Redirecting to dashboard from Settings...');
+    
+    // Click feedback
+    newManageBtn.style.transform = 'scale(0.97)';
+    setTimeout(() => {
+      newManageBtn.style.transform = 'scale(1)';
+    }, 150);
+    
+    // Hide settings, show dashboard
+    const settingsPanel = document.getElementById('settingsPanel');
+    const mainPanel = document.getElementById('mainPanel');
+    
+    if (settingsPanel && mainPanel) {
+      settingsPanel.classList.add('hidden');
+      settingsPanel.classList.add('translate-x-full', 'opacity-0');
+      settingsPanel.classList.remove('translate-x-0', 'opacity-100');
+      
+      setTimeout(() => {
+        mainPanel.style.display = 'block';
+        setTimeout(() => {
+          mainPanel.classList.remove('translate-x-[-100%]', 'opacity-0');
+          mainPanel.classList.add('translate-x-0', 'opacity-100');
+        }, 30);
+      }, 300);
+    }
+    
+    // Show toast notification
+    showStatus('💡 Click "⚙️ Manage" on your plan badge to open Stripe portal', 'info');
+  });
+}
