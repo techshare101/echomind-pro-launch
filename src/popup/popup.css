@@ -423,6 +423,56 @@ header {
   animation: forgePulse 2.5s infinite ease-in-out;
 }
 
+/* 🚀 Forge Glow Animation for Manage Button */
+@keyframes forgeGlow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(94, 234, 212, 0.4),
+                0 0 24px rgba(124, 58, 237, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(124, 58, 237, 0.6),
+                0 0 40px rgba(94, 234, 212, 0.5);
+  }
+}
+
+.animate-forge-glow {
+  animation: forgeGlow 3s infinite ease-in-out;
+}
+
+/* 🌟 Toast Notification Animation */
+@keyframes toastFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-toast-fade {
+  animation: toastFade 0.4s ease-out;
+  transition: opacity 0.3s ease-in-out;
+  opacity: 0;
+}
+
+.forge-toast {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, #0891b2, #7c3aed);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 20px rgba(94, 234, 212, 0.4);
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 9999;
+  pointer-events: none;
+}
+
 /* 🌟 Dynamic Plan Badge Control Center */
 .plan-badge {
   margin: 12px 0;

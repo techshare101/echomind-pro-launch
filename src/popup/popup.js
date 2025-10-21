@@ -1153,6 +1153,35 @@ checkSubscriptionStatus().then(() => {
   celebrateProActivation();
 });
 
+// ========== 🚀 FORGE TELEPORT: SETTINGS → DASHBOARD ==========
+
+/**
+ * Creates a cinematic toast notification
+ * @param {string} message - Toast message
+ * @param {number} duration - Display duration in ms
+ */
+function showForgeToast(message, duration = 2500) {
+  const toast = document.createElement('div');
+  toast.textContent = message;
+  toast.className = 'forge-toast animate-toast-fade';
+  document.body.appendChild(toast);
+  
+  // Fade in
+  setTimeout(() => {
+    toast.style.opacity = '1';
+  }, 50);
+  
+  // Fade out
+  setTimeout(() => {
+    toast.style.opacity = '0';
+  }, duration - 500);
+  
+  // Remove
+  setTimeout(() => {
+    toast.remove();
+  }, duration);
+}
+
 // Update Settings "Manage Subscription" button to redirect to dashboard
 const settingsManageBtn = document.getElementById('manageSubBtn');
 if (settingsManageBtn) {
@@ -1161,33 +1190,21 @@ if (settingsManageBtn) {
   settingsManageBtn.parentNode.replaceChild(newManageBtn, settingsManageBtn);
   
   newManageBtn.addEventListener('click', () => {
-    console.log('🔄 Redirecting to dashboard from Settings...');
+    const dashboardUrl = 'https://echomind-pro-launch.vercel.app/dashboard?from=success';
+    console.log('🚀 Opening Forge Cockpit at:', dashboardUrl);
     
-    // Click feedback
-    newManageBtn.style.transform = 'scale(0.97)';
+    // Click feedback animation
+    newManageBtn.style.transform = 'scale(0.95)';
     setTimeout(() => {
       newManageBtn.style.transform = 'scale(1)';
     }, 150);
     
-    // Hide settings, show dashboard
-    const settingsPanel = document.getElementById('settingsPanel');
-    const mainPanel = document.getElementById('mainPanel');
+    // Show cinematic toast
+    showForgeToast('🚀 Opening Forge Cockpit...');
     
-    if (settingsPanel && mainPanel) {
-      settingsPanel.classList.add('hidden');
-      settingsPanel.classList.add('translate-x-full', 'opacity-0');
-      settingsPanel.classList.remove('translate-x-0', 'opacity-100');
-      
-      setTimeout(() => {
-        mainPanel.style.display = 'block';
-        setTimeout(() => {
-          mainPanel.classList.remove('translate-x-[-100%]', 'opacity-0');
-          mainPanel.classList.add('translate-x-0', 'opacity-100');
-        }, 30);
-      }, 300);
-    }
-    
-    // Show toast notification
-    showStatus('💡 Click "⚙️ Manage" on your plan badge to open Stripe portal', 'info');
+    // Redirect after cinematic delay
+    setTimeout(() => {
+      chrome.tabs.create({ url: dashboardUrl });
+    }, 900);
   });
 }
