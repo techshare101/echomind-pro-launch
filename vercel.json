@@ -3,7 +3,14 @@
     {
       "source": "/api/:path*",
       "destination": "https://us-central1-echomind-pro-launch.cloudfunctions.net/:path*"
-    }
+    },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/dashboard", "destination": "/dashboard.html" },
+    { "source": "/success", "destination": "/success.html" },
+    { "source": "/cancel", "destination": "/cancel.html" },
+    { "source": "/pricing", "destination": "/pricing.html" },
+    { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/vault", "destination": "/vault.html" }
   ],
   "cleanUrls": true,
   "trailingSlash": false
