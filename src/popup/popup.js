@@ -87,6 +87,200 @@ function formatSummary(summary) {
     .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
 }
 
+// Create visual banner showing which AI provider was used
+function createProviderBanner(provider, isLocal = false) {
+  let engineLabel, engineColor;
+  
+  if (isLocal) {
+    engineLabel = "Local Chrome AI (Fallback)";
+    engineColor = "#f87171"; // Red
+  } else if (provider.includes("OpenAI")) {
+    engineLabel = "GPT-4 via OpenAI";
+    engineColor = "#8b5cf6"; // Violet
+  } else if (provider.includes("Claude")) {
+    engineLabel = "Claude via OpenRouter";
+    engineColor = "#00ffff"; // Cyan
+  } else if (provider.includes("Mistral")) {
+    engineLabel = "Mistral via OpenRouter";
+    engineColor = "#ff6b6b"; // Orange-red
+  } else if (provider.includes("Gemini")) {
+    engineLabel = "Gemini via OpenRouter";
+    engineColor = "#4285f4"; // Google blue
+  } else if (provider.includes("OpenRouter")) {
+    engineLabel = "OpenRouter";
+    engineColor = "#00ffff"; // Cyan
+  } else {
+    engineLabel = provider || "Unknown Provider";
+    engineColor = "#aaa"; // Gray
+  }
+  
+  return `
+    <div style="
+      background: linear-gradient(to right, ${engineColor}33, transparent);
+      border-left: 4px solid ${engineColor};
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      color: ${engineColor};
+      font-weight: 600;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    ">
+      <span style="font-size: 1.1rem;">☁️</span>
+      <span>Cloud Summary: ${engineLabel}</span>
+    </div>
+  `;
+}
+
+// 🔮 FORGE TRACE HUD v2 - Neon gradient HUD with animated latency bar
+async function renderForgeTraceHUD(engine, endpoint, status, latencyMs) {
+  const result = await chrome.storage.local.get(["showDebug", "compactHUD"]);
+  const showDebug = result.showDebug ?? false;
+  const compactMode = result.compactHUD ?? false;
+  
+  if (!showDebug) return "";
+
+  // Define Forge color gradients
+  const gradients = {
+    "Claude": "linear-gradient(90deg, #00ffffaa, #8b5cf6aa)",
+    "OpenAI": "linear-gradient(90deg, #8b5cf6aa, #ff80b5aa)",
+    "Mistral": "linear-gradient(90deg, #f97316aa, #fde047aa)",
+    "Gemini": "linear-gradient(90deg, #38bdf8aa, #a855f7aa)",
+    "Local": "linear-gradient(90deg, #f87171aa, #facc15aa)",
+  };
+
+  const color =
+    engine.includes("Claude")
+      ? gradients["Claude"]
+      : engine.includes("GPT-4") || engine.includes("OpenAI")
+      ? gradients["OpenAI"]
+      : engine.includes("Mistral")
+      ? gradients["Mistral"]
+      : engine.includes("Gemini")
+      ? gradients["Gemini"]
+      : gradients["Local"];
+
+  // Normalize latency for the bar (cap at 5s)
+  const latencyPct = Math.min((latencyMs / 5000) * 100, 100).toFixed(1);
+  const latencyColor =
+    latencyMs < 1000 ? "#10b981" : latencyMs < 2500 ? "#facc15" : "#ef4444";
+
+  // Compact mode: just model + latency
+  if (compactMode) {
+    return `
+      <div class="forge-trace-hud-compact" style="
+        background: #0f172acc;
+        border: 1px solid #1e293b;
+        border-radius: 6px;
+        margin-top: 6px;
+        padding: 6px 10px;
+        font-family: 'JetBrains Mono', monospace;
+        color: #d1d5db;
+        font-size: 0.75rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        animation: fadeIn 0.5s ease-in-out;
+      ">
+        <span style="font-weight:600; background:${color}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
+          🤖 ${engine}
+        </span>
+        <span style="color:${latencyColor}; font-weight:600;">
+          ⏱️ ${latencyMs.toFixed(0)}ms
+        </span>
+      </div>
+      <style>
+        @keyframes fadeIn {
+          from { opacity:0; transform:translateY(5px); }
+          to { opacity:1; transform:translateY(0); }
+        }
+      </style>
+    `;
+  }
+
+  // Full mode: complete telemetry
+  return `
+    <div class="forge-trace-hud" style="
+      background: #0f172acc;
+      border: 1px solid #1e293b;
+      border-radius: 10px;
+      margin-top: 8px;
+      padding: 10px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #d1d5db;
+      font-size: 0.85rem;
+      box-shadow: 0 0 12px ${latencyColor}33;
+      animation: fadeIn 0.5s ease-in-out;
+    ">
+      <div style="font-weight:600; background:${color}; -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
+        ⚙️ Forge Trace HUD
+      </div>
+      <div style="margin-top:6px; line-height:1.5;">
+        🌐 <b>Endpoint:</b> <span style="font-size:0.75rem; color:#9ca3af;">${endpoint}</span><br/>
+        🤖 <b>Engine:</b> ${engine}<br/>
+        📊 <b>Status:</b> ${status}<br/>
+      </div>
+      <div style="margin-top:6px;">
+        ⏱️ <b>Latency:</b> ${latencyMs.toFixed(2)} ms
+        <div style="
+          width:100%; height:6px; border-radius:4px; margin-top:3px;
+          background:#1f2937; overflow:hidden;
+        ">
+          <div style="
+            width:${latencyPct}%;
+            height:6px;
+            background:${latencyColor};
+            border-radius:4px;
+            transition:width 0.5s ease-in-out;
+            animation:pulseGlow 2s infinite ease-in-out;
+          "></div>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      @keyframes fadeIn {
+        from { opacity:0; transform:translateY(5px); }
+        to { opacity:1; transform:translateY(0); }
+      }
+      @keyframes pulseGlow {
+        0%, 100% { box-shadow: 0 0 6px ${latencyColor}66; }
+        50% { box-shadow: 0 0 16px ${latencyColor}aa; }
+      }
+    </style>
+  `;
+}
+
+// Forge pulse animation on successful response
+function showForgePulse() {
+  const pulse = document.createElement("div");
+  pulse.style = `
+    position:fixed; bottom:20px; right:20px;
+    width:12px; height:12px;
+    background: radial-gradient(circle, #00ffff, #8b5cf6);
+    border-radius:50%; box-shadow:0 0 20px #00ffff;
+    opacity:0.8; animation: forgePulse 2s infinite ease-in-out;
+    z-index: 9999;
+  `;
+  document.body.appendChild(pulse);
+  setTimeout(() => pulse.remove(), 4000);
+
+  // Add animation style if not already present
+  if (!document.getElementById("forge-pulse-style")) {
+    const style = document.createElement("style");
+    style.id = "forge-pulse-style";
+    style.textContent = `
+      @keyframes forgePulse {
+        0%,100% { transform: scale(1); opacity:0.6; }
+        50% { transform: scale(1.8); opacity:1; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
 async function sendMessageSafe(payload) {
   return new Promise((resolve) => {
     chrome.runtime.sendMessage(payload, (response) => {
@@ -111,14 +305,180 @@ async function localSummarize(text) {
 
 async function aiSummarize(text, key) {
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
+    // ✅ UNIFIED ROUTING: Detect provider and route accordingly
+    const isOpenRouter = key.startsWith("sk-or-");
+    const isOpenAI = key.startsWith("sk-proj-") || (key.startsWith("sk-") && !key.startsWith("sk-ant-") && !key.startsWith("sk-or-"));
+    const isClaude = key.startsWith("sk-ant-");
+    // ✅ Check Gemini BEFORE Mistral (Gemini keys start with AIza)
+    const isGemini = key.startsWith("AIza");
+    // ✅ Mistral: old format (mistral-xxx) + new format (32-40 alphanumeric, no prefix)
+    const isMistral = !isGemini && (key.startsWith("mistral-") || /^[A-Za-z0-9]{32,40}$/.test(key));
+    
+    // ✅ Route Claude and Mistral through Firebase proxy (CORS-safe)
+    const useProxy = isClaude || isMistral;
+    
+    if (useProxy) {
+      // Route through Firebase proxy for CORS-blocked providers
+      let provider = "";
+      if (isClaude) provider = "Claude";
+      else if (isMistral) provider = "Mistral";
+      
+      console.log(`🤖 Using ${provider} via Forge Proxy for summarization`);
+      
+      const startTime = performance.now();
+      
+      const response = await fetch("https://us-central1-echomind-pro-launch.cloudfunctions.net/universalSummarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          apiKey: key,
+          provider: provider,
+          text: text
+        })
+      });
+      
+      const latency = performance.now() - startTime;
+      
+      if (!response.ok) {
+        console.error(`❌ Proxy Error: ${response.status}`);
+        return `⚠️ ${provider} (via Forge Proxy) error: ${response.status}`;
+      }
+      
+      const data = await response.json();
+      
+      if (!data.ok) {
+        console.error(`❌ API Error:`, data);
+        window.lastTelemetry = {
+          provider: `${provider} (via Forge Proxy)`,
+          endpoint: data.endpoint || "Firebase Proxy",
+          status: `${data.status} ERROR`,
+          latency
+        };
+        return `⚠️ ${provider} error: ${data.reason}`;
+      }
+      
+      // Store telemetry
+      window.lastUsedProvider = `${provider} (via Forge Proxy)`;
+      window.lastTelemetry = {
+        provider: `${provider} (via Forge Proxy)`,
+        endpoint: data.endpoint || "Firebase Proxy",
+        status: `${data.status} OK`,
+        latency: data.latency || latency,
+        model: data.model
+      };
+      
+      showForgePulse();
+      
+      return `☁️ AI Summary (${provider} via Forge Proxy):\n${data.summary}`;
+    }
+    
+    // ✅ Gemini Hybrid Route: Proxy + OpenRouter fallback
+    if (isGemini) {
+      const provider = "Gemini";
+      const startTime = performance.now();
+      let summary = "";
+      let status = "";
+      let latency = 0;
+      let route = "Forge Proxy";
+      let endpoint = "";
+      let model = "";
+      
+      // 1️⃣ Try Firebase proxy first
+      try {
+        console.log(`🤖 Using ${provider} (via Forge Proxy) for summarization`);
+        endpoint = "https://us-central1-echomind-pro-launch.cloudfunctions.net/geminiProxy";
+        
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            apiKey: key,
+            text: text
+          })
+        });
+        
+        latency = performance.now() - startTime;
+        const data = await response.json();
+        
+        if (data.ok && data.summary) {
+          summary = data.summary;
+          status = "200 OK";
+          model = data.model;
+          console.log(`✅ Success with ${model} via Proxy (${latency}ms)`);
+        } else {
+          console.warn(`⚠️ Gemini proxy failed:`, data);
+          status = `${data.status || 502} Proxy Fail`;
+        }
+      } catch (err) {
+        console.error(`❌ Gemini proxy fetch error:`, err);
+        status = "Network Error (Proxy)";
+      }
+      
+      // 2️⃣ If proxy failed, return detailed error (no OpenRouter fallback for Google keys)
+      if (!summary) {
+        console.error(`❌ Gemini proxy failed and no fallback available for Google API keys`);
+        // Note: OpenRouter fallback only works with OpenRouter keys (sk-or-...)
+        // Google API keys (AIza...) cannot be used with OpenRouter
+      }
+      
+      // 3️⃣ Store telemetry and return
+      window.lastUsedProvider = `${provider} (via ${route})`;
+      window.lastTelemetry = {
+        provider: `${provider} (via ${route})`,
+        endpoint,
+        status,
+        latency,
+        model,
+        route
+      };
+      
+      if (summary) {
+        showForgePulse();
+        return `☁️ AI Summary (${provider} via ${route}):\n${summary}`;
+      } else {
+        return `⚠️ ${provider} (${route}) error: ${status}`;
+      }
+    }
+    
+    // Direct routing for OpenAI and OpenRouter
+    let endpoint, headers, provider;
+    
+    if (isOpenAI) {
+      // OpenAI direct call
+      endpoint = "https://api.openai.com/v1/chat/completions";
+      headers = {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${key}`,
-      },
+        "Authorization": `Bearer ${key}`,
+      };
+      provider = "OpenAI";
+    } else {
+      // OpenRouter direct call
+      endpoint = "https://openrouter.ai/api/v1/chat/completions";
+      headers = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${key}`,
+        "HTTP-Referer": "https://echomind-pro-launch.vercel.app",
+        "X-Title": "EchoMind Pro",
+      };
+      provider = "OpenRouter";
+    }
+    
+    console.log(`🤖 Using ${provider} for summarization`);
+    console.log(`📡 Endpoint: ${endpoint}`);
+    
+    // 🧠 Model mapping per provider
+    let model = isOpenRouter ? "openai/gpt-4o-mini" : "gpt-4o-mini";
+    
+    console.log(`📋 Model: ${model}`);
+    
+    // Track latency for Forge HUD
+    const startTime = performance.now();
+    
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers,
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: model,
         messages: [
           {
             role: "system",
@@ -128,10 +488,44 @@ async function aiSummarize(text, key) {
         ],
       }),
     });
+    
+    const latency = performance.now() - startTime;
+    
+    if (!response.ok) {
+      console.error(`❌ API Error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error(`Error details:`, errorText);
+      
+      // Store telemetry for HUD
+      window.lastTelemetry = {
+        provider,
+        endpoint,
+        status: `${response.status} ERROR`,
+        latency
+      };
+      
+      return `⚠️ ${provider} error: ${response.status} - ${response.statusText}`;
+    }
+    
     const data = await response.json();
-    return `☁️ AI Summary:\n${data.choices?.[0]?.message?.content || "No result."}`;
+    const summary = data.choices?.[0]?.message?.content || "No result.";
+    
+    // Store provider info and telemetry for banner and HUD
+    window.lastUsedProvider = provider;
+    window.lastTelemetry = {
+      provider,
+      endpoint,
+      status: `${response.status} OK`,
+      latency
+    };
+    
+    // Show Forge pulse on success
+    showForgePulse();
+    
+    return `☁️ AI Summary (${provider}):\n${summary}`;
   } catch (err) {
-    console.error(err);
+    console.error("❌ Cloud summarizer error:", err);
+    window.lastUsedProvider = "Error - Fallback";
     return "⚠️ Cloud summarizer error.";
   }
 }
@@ -148,23 +542,25 @@ async function init() {
     }
     showStatus("Ready ✅");
 
-    const { pendingSummary, pendingMode, aiSettings, targetLang } = await chrome.storage.local.get([
+    const { pendingSummary, pendingMode, openaiKey, enableCloud, targetLang } = await chrome.storage.local.get([
       "pendingSummary",
       "pendingMode",
-      "aiSettings",
+      "openaiKey",
+      "enableCloud",
       "targetLang",
     ]);
-    if (aiSettings) {
-      aiToggle.checked = aiSettings.enabled;
-      apiKeyInput.value = aiSettings.key || "";
+    
+    // Update UI if settings panel exists
+    if (aiToggle && apiKeyInput) {
+      aiToggle.checked = enableCloud || false;
+      apiKeyInput.value = openaiKey || "";
     }
 
     if (pendingSummary) {
       console.log(`📥 Auto processing: ${pendingMode || 'summarize'}`);
       startThinking();
       const text = pendingSummary;
-      const key = aiSettings?.key;
-      const useAI = aiSettings?.enabled && key;
+      const useAI = enableCloud && openaiKey;
       const mode = pendingMode || "summarize";
       const lang = targetLang || "English";
 
@@ -193,12 +589,26 @@ async function init() {
 
       // Run local or cloud AI
       const result = useAI
-        ? await aiSummarize(prompt, key)
+        ? await aiSummarize(prompt, openaiKey)
         : await localSummarize(text);
 
-      // Set UI state + style
+      // Set UI state + style with provider banner and Forge HUD
       summaryBox.setAttribute("data-mode", mode);
-      summaryBox.innerHTML = `<strong>${label}:</strong><br>${result.replace(/\n/g, "<br>")}`;
+      const provider = window.lastUsedProvider || (useAI ? "Cloud AI" : "Local");
+      const banner = useAI ? createProviderBanner(provider, false) : createProviderBanner("Local", true);
+      
+      // Add Forge Trace HUD if telemetry available
+      let forgeHUD = "";
+      if (useAI && window.lastTelemetry) {
+        forgeHUD = await renderForgeTraceHUD(
+          window.lastTelemetry.provider,
+          window.lastTelemetry.endpoint,
+          window.lastTelemetry.status,
+          window.lastTelemetry.latency
+        );
+      }
+      
+      summaryBox.innerHTML = `${banner}${forgeHUD}<strong>${label}:</strong><br>${result.replace(/\n/g, "<br>")}`;
       summaryBox.scrollTop = 0;
       await chrome.storage.local.set({ lastSummaryLength: result.length });
       stopThinking();
@@ -237,9 +647,8 @@ async function runAction(mode, lang = "English") {
       return;
     }
 
-    const { aiSettings } = await chrome.storage.local.get("aiSettings");
-    const key = aiSettings?.key;
-    const useAI = aiSettings?.enabled && key;
+    const { openaiKey, enableCloud } = await chrome.storage.local.get(["openaiKey", "enableCloud"]);
+    const useAI = enableCloud && openaiKey;
 
     let label = "";
     let prompt = "";
@@ -264,11 +673,26 @@ async function runAction(mode, lang = "English") {
     }
 
     const result = useAI 
-      ? await aiSummarize(prompt, key) 
+      ? await aiSummarize(prompt, openaiKey) 
       : await localSummarize(text);
 
+    // Add provider banner and Forge HUD to show which AI was used
     summaryBox.setAttribute("data-mode", mode);
-    summaryBox.innerHTML = `<strong>${label}:</strong><br>${result.replace(/\n/g, "<br>")}`;
+    const provider = window.lastUsedProvider || (useAI ? "Cloud AI" : "Local");
+    const banner = useAI ? createProviderBanner(provider, false) : createProviderBanner("Local", true);
+    
+    // Add Forge Trace HUD if telemetry available
+    let forgeHUD = "";
+    if (useAI && window.lastTelemetry) {
+      forgeHUD = await renderForgeTraceHUD(
+        window.lastTelemetry.provider,
+        window.lastTelemetry.endpoint,
+        window.lastTelemetry.status,
+        window.lastTelemetry.latency
+      );
+    }
+    
+    summaryBox.innerHTML = `${banner}${forgeHUD}<strong>${label}:</strong><br>${result.replace(/\n/g, "<br>")}`;
     summaryBox.scrollTop = 0;
     await chrome.storage.local.set({ lastSummaryLength: result.length });
     stopThinking();
@@ -514,11 +938,10 @@ manageSubBtn.addEventListener('click', () => {
 closePortalBtn.addEventListener('click', closePortalOverlay);
 
 saveSettingsBtn.addEventListener("click", async () => {
-  const settings = {
-    enabled: aiToggle.checked,
-    key: apiKeyInput.value.trim(),
-  };
-  await chrome.storage.local.set({ aiSettings: settings });
+  await chrome.storage.local.set({ 
+    enableCloud: aiToggle.checked,
+    openaiKey: apiKeyInput.value.trim()
+  });
   settingsPanel.classList.add("hidden");
   showStatus("Settings saved ✅");
 });
@@ -574,20 +997,17 @@ function openMiniDashboard() {
   document.body.appendChild(fallback);
 
   // Load existing settings
-  chrome.storage.local.get("aiSettings", ({ aiSettings }) => {
-    if (aiSettings) {
-      document.getElementById("miniAiToggle").checked = aiSettings.enabled || false;
-      document.getElementById("miniApiKey").value = aiSettings.key || "";
-    }
+  chrome.storage.local.get(["enableCloud", "openaiKey"], ({ enableCloud, openaiKey }) => {
+    document.getElementById("miniAiToggle").checked = enableCloud || false;
+    document.getElementById("miniApiKey").value = openaiKey || "";
   });
 
   // Save handler
   document.getElementById("miniSave").addEventListener("click", async () => {
-    const settings = {
-      enabled: document.getElementById("miniAiToggle").checked,
-      key: document.getElementById("miniApiKey").value.trim(),
-    };
-    await chrome.storage.local.set({ aiSettings: settings });
+    await chrome.storage.local.set({ 
+      enableCloud: document.getElementById("miniAiToggle").checked,
+      openaiKey: document.getElementById("miniApiKey").value.trim()
+    });
     showStatus("Settings saved ✅");
     setTimeout(() => {
       fallback.remove();

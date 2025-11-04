@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login | EchoMind Pro</title>
+
+  <!-- Chrome Identity Auth Module (Manifest V3 compliant) -->
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: radial-gradient(circle at 20% 20%, #0b0f1a, #04060d 70%);
+      color: #cfe7ff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Animated background aura */
+    body::before {
+      content: '';
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(0, 224, 255, 0.15), transparent 70%);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation: pulse 4s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    body::after {
+      content: '';
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(125, 75, 255, 0.15), transparent 70%);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation: pulse 4s ease-in-out infinite 2s;
+      pointer-events: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.5;
+      }
+      50% {
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 0.8;
+      }
+    }
+
+    .container {
+      background: rgba(20, 25, 40, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 50px 40px;
+      box-shadow: 0 0 60px rgba(100, 0, 255, 0.3), 0 0 100px rgba(0, 224, 255, 0.2);
+      width: 90%;
+      max-width: 420px;
+      backdrop-filter: blur(12px);
+      position: relative;
+      z-index: 1;
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 12px;
+      background: linear-gradient(90deg, #00e0ff, #7d4bff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 700;
+    }
+
+    p {
+      opacity: 0.85;
+      margin-bottom: 30px;
+      color: #94a3b8;
+      font-size: 1rem;
+    }
+
+    #google-login {
+      background: linear-gradient(90deg, #00e0ff, #7d4bff);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-weight: 600;
+      padding: 14px 28px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 224, 255, 0.3);
+    }
+
+    #google-login:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 0 30px #00e0ff, 0 0 50px #7d4bff;
+    }
+
+    #google-login:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    #google-login:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .google-icon {
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 2px;
+      padding: 2px;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top: 2px solid #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    footer {
+      margin-top: 30px;
+      font-size: 0.85rem;
+      opacity: 0.5;
+      color: #64748b;
+    }
+
+    .back-link {
+      margin-top: 20px;
+      font-size: 0.9rem;
+    }
+
+    .back-link a {
+      color: #06b6d4;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .back-link a:hover {
+      color: #00e0ff;
+      text-decoration: underline;
+    }
+
+    /* Footer link hover glow effect */
+    footer a:hover {
+      color: #7d4bff;
+      text-shadow: 0 0 8px rgba(125, 75, 255, 0.7);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⚡ EchoMind Pro</h1>
+    <p>Sign in with Google to access your dashboard</p>
+
+    <button id="google-login">
+      <img src="https://developers.google.com/identity/images/g-logo.png"
+           class="google-icon"
+           alt="Google">
+      <span id="btn-text">Continue with Google</span>
+    </button>
+
+    <div class="back-link">
+      <a href="/pricing.html">← Back to Pricing</a>
+    </div>
+
+    <footer style="text-align:center; font-size:0.9rem; color:#9baecf;">
+      © 2025 EchoMind Pro — Powered by <strong>MetalMindTech</strong> · 
+      <a href="https://echomind-pro-launch.vercel.app/privacy" 
+         target="_blank" 
+         style="color:#00e0ff; text-decoration:none; transition:all 0.3s ease;">
+        Privacy Policy
+      </a> · 
+      <a href="https://echomind-pro-launch.vercel.app/terms" 
+         target="_blank" 
+         style="color:#00e0ff; text-decoration:none; transition:all 0.3s ease;">
+        Terms of Use
+      </a>
+    </footer>
+  </div>
+
+  <script type="module">
+    import { signInWithGoogle, getCurrentUser } from './lib/chrome-identity-auth.js';
+
+    const loginBtn = document.getElementById("google-login");
+    const btnText = document.getElementById("btn-text");
+
+    loginBtn.addEventListener("click", async () => {
+      // Show loading state
+      loginBtn.disabled = true;
+      btnText.textContent = "Signing you in…";
+      
+      const spinner = document.createElement("div");
+      spinner.className = "spinner";
+      loginBtn.insertBefore(spinner, loginBtn.firstChild);
+
+      try {
+        const user = await signInWithGoogle();
+        
+        console.log("✅ Signed in as:", user.email);
+        
+        // Save email to localStorage
+        localStorage.setItem("echomind_pro_email", user.email);
+        
+        // Redirect to dashboard
+        window.location.href = "/dashboard.html";
+      } catch (error) {
+        console.error("❌ Login failed:", error);
+        
+        // Reset button state
+        spinner.remove();
+        btnText.textContent = "Continue with Google";
+        loginBtn.disabled = false;
+        
+        // Show error
+        alert("Login failed. Please try again.");
+      }
+    });
+
+    // Check if already logged in
+    (async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        console.log("Already logged in as:", user.email);
+        localStorage.setItem("echomind_pro_email", user.email);
+        window.location.href = "/dashboard.html";
+      }
+    })();
+  </script>
+</body>
+</html>

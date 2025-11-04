@@ -1,9 +1,11 @@
 /**
- * EchoMind v0.3.3 "Stable Context Summarizer"
- * Unified Background Service Worker
+ * EchoMind v2.0.0 "Universal BYOK Engine"
+ * Unified Background Service Worker with Multi-Provider AI Support
  */
 
-console.log('🧠 EchoMind background v0.3.3 loaded');
+import { universalSummarize, universalExplain, detectProvider } from './lib/universalSummarizer';
+
+console.log('🧠 EchoMind background v2.0.0 loaded');
 
 if (typeof self !== 'undefined') {
   // ---------- 1️⃣ Keep-alive Heartbeat ----------
@@ -189,7 +191,7 @@ if (typeof self !== 'undefined') {
   // ---------- 6️⃣ Message Handlers ----------
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'ping') {
-      sendResponse({ status: 'ok', version: '0.3.3' });
+      sendResponse({ status: 'ok', version: '2.0.0' });
       return true;
     }
 
@@ -210,6 +212,52 @@ if (typeof self !== 'undefined') {
       console.error('🧠 EchoMind error:', message.payload);
       sendResponse({ status: 'logged' });
       return true;
+    }
+
+    // 🔥 Universal AI Summarize
+    if (message.type === 'summarize') {
+      (async () => {
+        try {
+          const { openaiKey, enableCloud } = await chrome.storage.local.get(['openaiKey', 'enableCloud']);
+          const provider = detectProvider(openaiKey || '');
+          
+          console.log(`🤖 Summarizing with ${provider || 'local fallback'}`);
+          
+          const result = await universalSummarize(message.text, {
+            apiKey: openaiKey || '',
+            enableCloud: enableCloud || false
+          });
+          
+          sendResponse({ success: true, result, provider });
+        } catch (error) {
+          console.error('Summarize error:', error);
+          sendResponse({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+        }
+      })();
+      return true; // Keep channel open for async response
+    }
+
+    // 🔥 Universal AI Explain
+    if (message.type === 'explain') {
+      (async () => {
+        try {
+          const { openaiKey, enableCloud } = await chrome.storage.local.get(['openaiKey', 'enableCloud']);
+          const provider = detectProvider(openaiKey || '');
+          
+          console.log(`🤖 Explaining with ${provider || 'local fallback'}`);
+          
+          const result = await universalExplain(message.text, {
+            apiKey: openaiKey || '',
+            enableCloud: enableCloud || false
+          });
+          
+          sendResponse({ success: true, result, provider });
+        } catch (error) {
+          console.error('Explain error:', error);
+          sendResponse({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+        }
+      })();
+      return true; // Keep channel open for async response
     }
   });
 

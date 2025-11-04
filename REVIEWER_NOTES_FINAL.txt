@@ -1,0 +1,52 @@
+=== EchoMind Pro v2.0.4 - Compliance Update ===
+
+ADDRESSING VIOLATIONS:
+
+1. Blue Argon (Remote Script Injection) - FIXED ✅
+   - Removed Firebase Auth SDK entirely (was 267KB with internal script injection)
+   - Implemented Chrome Identity API (chrome.identity.launchWebAuthFlow)
+   - All authentication code is self-contained in dist/lib/chrome-identity-auth.js (5.4KB)
+   - No dynamic script creation anywhere in the codebase
+   - CSP enforced: script-src 'self'; object-src 'self';
+
+2. Purple Potassium (identity Permission) - FIXED ✅
+   - Permission actively used for Google OAuth via Chrome Identity API
+   - Three API calls implemented:
+     * chrome.identity.launchWebAuthFlow() - OAuth sign-in flow
+     * chrome.identity.getRedirectURL() - Redirect handling
+     * chrome.identity.removeCachedAuthToken() - Token revocation on sign-out
+   - oauth2 config added to manifest.json with scopes: openid, email, profile
+   - Client ID: 643933689359-9tr6aqdtmnjyketiil6ca5dm0ed22ln4.apps.googleusercontent.com
+
+AUTHENTICATION FLOW:
+1. User clicks "Sign in with Google" in dashboard/login page
+2. chrome.identity.launchWebAuthFlow() opens native Google OAuth dialog
+3. Token received via chrome.identity.getRedirectURL()
+4. User info fetched from googleapis.com/oauth2/v2/userinfo (Google's official API)
+5. User data stored in chrome.storage.local (local storage, not synced)
+6. Sign-out uses chrome.identity.removeCachedAuthToken() to revoke token
+
+FIRESTORE USAGE (Separate from Auth):
+- Firebase SDK still used for Firestore database (contact forms, user subscription data)
+- NO Firebase Auth SDK included
+- Firestore client is local, bundled in extension package
+- No remote code injection from Firestore
+- Only database operations, not authentication
+
+VERIFICATION:
+- No firebase-auth.js in package ✅
+- No remote script injection detected ✅
+- Chrome Identity API verified in dist/lib/chrome-identity-auth.js ✅
+- All permissions actively justified ✅
+- OAuth Client ID properly configured ✅
+- Bundle size reduced from 267KB to 5.4KB for auth module ✅
+
+TECHNICAL DETAILS:
+- Manifest Version: 3
+- Content Security Policy: script-src 'self'; object-src 'self';
+- Authentication: 100% Chrome Identity API (browser-native)
+- Database: Firebase Firestore (for data storage only)
+- Package size: 94.75 KB
+- No external scripts loaded at runtime
+
+Extension is 100% Manifest V3 compliant and ready for production use.

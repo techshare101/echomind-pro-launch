@@ -89,23 +89,83 @@
       color: #00ffa2;
       border: 1px solid #00ffa2;
     }
+    #byok-banner {
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      color: white;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    #byok-banner.has-key {
+      background: linear-gradient(90deg, #00ffa2, #0078ff);
+    }
+    #byok-banner-text {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    #byok-banner button {
+      background: #fff;
+      color: #3b82f6;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    #byok-banner.has-key button {
+      color: #0078ff;
+    }
+    #byok-banner button:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+    .ai-mode-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.2);
+      margin-left: 8px;
+    }
+    #mode-status {
+      transition: color 0.4s ease, opacity 0.4s ease;
+    }
   </style>
 </head>
 <body>
-  <h2>🧠 EchoMind Dashboard</h2>
+  <h2 style="margin-bottom: 8px;">🧠 EchoMind Dashboard</h2>
+  <p id="mode-status" style="
+    font-size: 13px;
+    color: #9ca3af;
+    margin-top: -4px;
+    margin-bottom: 16px;
+    font-family: Inter, system-ui, sans-serif;
+  ">
+    Checking mode...
+  </p>
 
-  <section id="settingsSection">
-    <h3>⚙️ Settings</h3>
-    <label>
-      <input type="checkbox" id="aiToggle" /> Enable Cloud AI (OpenAI)
-    </label>
-    <label>
-      OpenAI API Key:
-      <textarea id="apiKeyInput" placeholder="sk-..."></textarea>
-    </label>
-    <button id="saveSettingsBtn">💾 Save Settings</button>
-    <div id="settingsStatus" class="status" style="display: none;"></div>
-  </section>
+  <!-- BYOK Onboarding Banner -->
+  <div id="byok-banner">
+    <div id="byok-banner-text">
+      <span id="banner-icon">⚙️</span>
+      <div>
+        <strong id="banner-title">Bring Your Own Key</strong>
+        <div id="banner-subtitle" style="font-size: 13px; opacity: 0.9; margin-top: 2px;">
+          Connect OpenAI, Claude, Mistral, Gemini, or OpenRouter to unlock full AI power
+        </div>
+      </div>
+    </div>
+    <button id="go-settings">Add Key</button>
+  </div>
 
   <section id="vaultSection">
     <h3>📦 Memory Vault</h3>

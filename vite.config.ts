@@ -19,13 +19,19 @@ export default defineConfig({
         { src: 'src/popup/popup.html', dest: '.' },
         { src: 'src/popup/dashboard.html', dest: 'popup' },
         { src: 'src/popup/dashboard.js', dest: 'popup' },
+        { src: 'src/popup/settings.html', dest: 'popup' },
+        { src: 'src/popup/settings.js', dest: 'popup' },
         { src: 'src/vault.html', dest: '.' },
+        { src: 'src/lib/chrome-identity-auth.js', dest: 'lib' },  // Copy auth module directly
         // Copy payment pages for deployment
         { src: 'index.html', dest: '.' },  // Home page for Vercel
+        { src: 'login.html', dest: '.' },  // Login page
         { src: 'dashboard.html', dest: '.' },  // Dashboard page
         { src: 'success.html', dest: '.' },
         { src: 'cancel.html', dest: '.' },
         { src: 'pricing.html', dest: '.' },
+        { src: 'privacy.html', dest: '.' },  // Privacy Policy
+        { src: 'terms.html', dest: '.' },  // Terms of Use
       ]
     })
   ],

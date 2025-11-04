@@ -1,68 +1,81 @@
 {
   "manifest_version": 3,
-  "name": "EchoMind",
-  "version": "0.3.5",
-  "description": "Your offline AI memory vault, summarizer, and context keeper — now with stable context menu integration.",
+  "name": "EchoMind Pro",
+  "version": "2.0.4",
+  "description": "Your intelligent reading assistant. Summarize, explain, and store insights directly in your browser with AI power.",
+  "author": "MetalMindTech",
+  "homepage_url": "https://echomind-pro-launch.vercel.app",
+
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
+
   "action": {
-    "default_title": "Open EchoMind Control Window"
+    "default_title": "Open EchoMind Pro",
+    "default_popup": "src/popup/popup.html"
   },
-  "options_ui": {
-    "page": "popup/dashboard.html",
-    "open_in_tab": true
-  },
+
   "background": {
     "service_worker": "background.js",
     "type": "module"
   },
+
+  "options_ui": {
+    "page": "popup/dashboard.html",
+    "open_in_tab": true
+  },
+
   "permissions": [
-    "storage",
     "activeTab",
+    "storage",
     "scripting",
     "contextMenus",
-    "tabs",
-    "notifications"
+    "identity"
   ],
-  "host_permissions": [
-    "<all_urls>"
+
+  "optional_host_permissions": [
+    "https://openrouter.ai/*",
+    "https://api.openai.com/*",
+    "https://generativelanguage.googleapis.com/*",
+    "https://us-central1-echomind-pro-launch.cloudfunctions.net/*"
   ],
+
   "web_accessible_resources": [
     {
       "resources": [
-        "popup.html",
-        "popup.js",
-        "popup.css",
+        "src/popup/popup.html",
         "popup/dashboard.html",
         "popup/dashboard.js",
         "vault.html",
         "vault.js",
-        "vault.css",
+        "vault-styles.css",
         "icons/*",
-        "assets/*"
+        "assets/*",
+        "lib/**/*"
       ],
-      "matches": ["<all_urls>"]
+      "matches": ["https://echomind-pro-launch.vercel.app/*"]
     }
   ],
+
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self';"
   },
+
   "commands": {
     "open-echo-window": {
       "suggested_key": {
         "default": "Ctrl+Shift+E"
       },
-      "description": "Open EchoMind control window"
+      "description": "Open EchoMind Pro window"
     }
   },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "css": ["content.css"]
-    }
-  ]
+
+  "short_name": "EchoMind",
+
+  "oauth2": {
+    "client_id": "643933689359-9tr6aqdtmnjyketiil6ca5dm0ed22ln4.apps.googleusercontent.com",
+    "scopes": ["openid", "email", "profile"]
+  }
 }

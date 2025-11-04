@@ -378,6 +378,52 @@
         }
       }
 
+      /* --- Forge Glow Aura for Pro Badge --- */
+      .forge-glow {
+        position: relative;
+        display: inline-block;
+        color: #7dffb4;
+        font-weight: 600;
+        text-shadow: 0 0 10px #00e0ff, 0 0 25px #7d4bff;
+      }
+
+      .forge-glow::before {
+        content: "";
+        position: absolute;
+        inset: -8px;
+        border-radius: 20px;
+        background: conic-gradient(from 180deg, #00e0ff77, #7d4bff77, #00e0ff77);
+        filter: blur(18px);
+        opacity: 0.6;
+        animation: forgePulse 4s ease-in-out infinite;
+        z-index: -1;
+      }
+
+      @keyframes forgePulse {
+        0%,100% { opacity: 0.55; transform: scale(1); }
+        50% { opacity: 0.9; transform: scale(1.08); }
+      }
+
+      /* --- Card-Level Forge Glow --- */
+      .dashboard-card.pro-active {
+        box-shadow: 0 0 40px rgba(0,224,255,.3),
+                    0 0 80px rgba(125,75,255,.25),
+                    0 0 140px rgba(0,224,255,.1);
+        transition: box-shadow 0.5s ease;
+        animation: cardGlow 6s ease-in-out infinite;
+      }
+
+      @keyframes cardGlow {
+        0%,100% {
+          box-shadow: 0 0 40px rgba(0,224,255,.3),
+                      0 0 80px rgba(125,75,255,.2);
+        }
+        50% {
+          box-shadow: 0 0 60px rgba(0,224,255,.45),
+                      0 0 120px rgba(125,75,255,.3);
+        }
+      }
+
       @media (max-width: 768px) {
         h1 {
           font-size: 2rem;
@@ -386,6 +432,12 @@
         .actions {
           grid-template-columns: 1fr;
         }
+      }
+
+      /* Footer link hover glow effect */
+      footer a:hover {
+        color: #7d4bff;
+        text-shadow: 0 0 8px rgba(125, 75, 255, 0.7);
       }
     </style>
   </head>
@@ -420,7 +472,19 @@
 
         <div id="error-container"></div>
 
-        <footer>© 2025 EchoMind Pro — Powered by MetalMindTech</footer>
+        <footer style="text-align:center; font-size:0.9rem; color:#9baecf;">
+          © 2025 EchoMind Pro — Powered by <strong>MetalMindTech</strong> · 
+          <a href="https://echomind-pro-launch.vercel.app/privacy" 
+             target="_blank" 
+             style="color:#00e0ff; text-decoration:none; transition:all 0.3s ease;">
+            Privacy Policy
+          </a> · 
+          <a href="https://echomind-pro-launch.vercel.app/terms" 
+             target="_blank" 
+             style="color:#00e0ff; text-decoration:none; transition:all 0.3s ease;">
+            Terms of Use
+          </a>
+        </footer>
       </div>
     </div>
 
@@ -474,7 +538,10 @@
       </div>
     </div>
 
-    <script>
+    <!-- Chrome Identity Auth (Manifest V3 compliant - no remote scripts) -->
+    <script type="module">
+      import { getCurrentUser, observeAuth, signOutUser } from './lib/chrome-identity-auth.js';
+
       const CHECKOUT_ENDPOINT = "https://us-central1-echomind-pro-launch.cloudfunctions.net/api/checkSubscription";
       const PORTAL_ENDPOINT = "https://us-central1-echomind-pro-launch.cloudfunctions.net/api/createCustomerPortalSession";
       
@@ -493,7 +560,29 @@
           }
           
           if (!email) {
-            throw new Error("No email found. Please login again.");
+            // Show login button instead of error
+            const statusBadge = document.getElementById("status-badge");
+            const planDetails = document.getElementById("plan-details");
+            
+            statusBadge.className = "status-badge inactive";
+            statusBadge.innerHTML = "🔒 Not Logged In";
+            planDetails.innerHTML = `
+              <p style="margin-bottom: 20px;">Please sign in to access your dashboard</p>
+              <button onclick="window.location.href='/login.html'" style="
+                background: linear-gradient(90deg, #00e0ff, #7d4bff);
+                border: none;
+                padding: 12px 24px;
+                border-radius: 10px;
+                color: white;
+                font-weight: 600;
+                cursor: pointer;
+                font-size: 1rem;
+                transition: all 0.3s ease;
+              " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 0 20px rgba(0,224,255,0.5)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+                🔑 Sign In with Google
+              </button>
+            `;
+            return;
           }
           
           const res = await fetch(
@@ -518,10 +607,10 @@
           if (data.active) {
             // Active subscription
             statusBadge.className = "status-badge active";
-            statusBadge.innerHTML = "✅ Active";
+            statusBadge.innerHTML = '<span class="forge-glow">✨ Active</span>';
             
             const planName = data.plan_type === "annual" ? "Annual" : "Monthly";
-            planDetails.textContent = `💎 EchoMind Pro ${planName}`;
+            planDetails.innerHTML = `<span class="forge-glow">💎 EchoMind Pro ${planName}</span>`;
             
             if (data.period_end) {
               const renewalDate = new Date(data.period_end * 1000).toLocaleDateString('en-US', {
@@ -531,6 +620,9 @@
               });
               renewalInfo.textContent = `Renews on ${renewalDate}`;
             }
+            
+            // Add Forge card aura
+            document.querySelector(".dashboard-card").classList.add("pro-active");
             
             // Show manage button
             manageBtn.style.display = "block";
@@ -683,32 +775,28 @@
         window.location.href = "/vault.html";
       };
       
-      document.getElementById("logout-btn").onclick = () => {
+      document.getElementById("logout-btn").onclick = async () => {
         if (confirm("Are you sure you want to logout?")) {
-          localStorage.removeItem("echomind_pro_email");
-          window.location.href = "/";
+          try {
+            // Sign out from Firebase
+            await signOutUser();
+            // Clear localStorage
+            localStorage.removeItem("echomind_pro_email");
+            // Redirect to login
+            window.location.href = "/login";
+          } catch (error) {
+            console.error("Logout error:", error);
+            // Still redirect even if signOut fails
+            localStorage.removeItem("echomind_pro_email");
+            window.location.href = "/login";
+          }
         }
       };
     </script>
 
     <!-- Contact Modal Script -->
     <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-      import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-      // Firebase configuration
-      const firebaseConfig = {
-        apiKey: "AIzaSyBjvU60DVPzad8YeejTLovwSuruKL7FG34",
-        authDomain: "echomind-pro-launch.firebaseapp.com",
-        projectId: "echomind-pro-launch",
-        storageBucket: "echomind-pro-launch.firebasestorage.app",
-        messagingSenderId: "643933689359",
-        appId: "1:643933689359:web:ff44d8beb1947a1404357a"
-      };
-
-      // Initialize Firebase
-      const app = initializeApp(firebaseConfig, "contact-app");
-      const db = getFirestore(app);
+      import { addContactMessage } from './lib/chrome-identity-auth.js';
 
       // Modal elements
       const openBtn = document.getElementById("openContactModal");
@@ -790,22 +878,18 @@
 
         try {
           // Add to Firestore - direct write for immediate feedback
-          await addDoc(collection(db, "contact_messages"), {
-            name,
-            email,
-            message,
-            sent_to: "contact@metalmindtech.com",
-            timestamp: serverTimestamp(),
-            status: "new",
-            source: "dashboard"
-          });
+          const result = await addContactMessage(name, email, message);
 
-          // ✅ Always show success feedback to user
-          showToast("✅ Message sent successfully! We'll reply within 24 hours.", "success");
-          closeContactModal();
-
+          if (result.success) {
+            // ✅ Always show success feedback to user
+            showToast("✅ Message sent successfully! We'll reply within 24 hours.", "success");
+            closeContactModal();
+          } else {
+            console.error("❌ Firestore write failed:", result.error);
+            showToast("⚠️ Message received — we'll reply soon!", "warning");
+          }
         } catch (error) {
-          console.error("❌ Firestore write failed:", error);
+          console.error("❌ Contact form error:", error);
           showToast("⚠️ Message received — we'll reply soon!", "warning");
         } finally {
           submitBtn.disabled = false;

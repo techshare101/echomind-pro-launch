@@ -32,6 +32,7 @@ exports.stripeWebhook = onRequest(
       timeoutSeconds: 60,
       memory: "256MiB",
       region: "us-central1",
+      invoker: "public", // ✅ Allow Stripe to call this webhook without authentication
       secrets: [stripeSecretKey, stripeWebhookSecret, stripePriceMonthly, stripePriceAnnual],
     },
     async (req, res) => {
@@ -264,26 +265,41 @@ exports.checkSubscription = onRequest(
       return res.status(400).json({error: "Missing uid, email, or idToken"});
     }
 
-    // Look up subscription in Firestore
-    let userDoc;
-    if (uid) {
-      userDoc = await db
-          .collection("user_subscription_status")
-          .doc(uid)
-          .get();
-    }
+    // 🔥 Query Stripe directly for real-time subscription status
+    const stripeKey = stripeSecretKey.value();
+    const stripeClient = require('stripe')(stripeKey);
     
-    if (!userDoc || !userDoc.exists) {
-      if (email) {
-        userDoc = await db
-            .collection("user_subscription_status")
-            .doc(email)
-            .get();
+    console.log("🔍 Checking Stripe for email:", email);
+    
+    // Find customer by email
+    const customers = await stripeClient.customers.list({
+      email: email,
+      limit: 1,
+    });
+    
+    if (customers.data.length === 0) {
+      console.log("❌ No Stripe customer found for", email);
+      
+      // Fallback: Check Firestore
+      const userDoc = await db
+          .collection("user_subscription_status")
+          .doc(email)
+          .get();
+      
+      if (userDoc.exists && userDoc.data().status === "active") {
+        const data = userDoc.data();
+        return res.status(200).json({
+          active: true,
+          plan: data.plan || "monthly",
+          plan_type: data.plan || "monthly",
+          status: "active",
+          unlimited: true,
+          customerId: data.customerId || null,
+          email: email,
+          source: "firestore",
+        });
       }
-    }
-
-    if (!userDoc || !userDoc.exists) {
-      console.log("❌ No subscription found for", uid || email);
+      
       return res.status(200).json({
         active: false,
         plan: "free",
@@ -294,33 +310,65 @@ exports.checkSubscription = onRequest(
         uid: uid,
       });
     }
-
-    const data = userDoc.data();
-    const status = data.status || "free";
-    const plan = data.plan || "monthly";
-    const isActive = status === "active";
     
-    // Calculate renewal date for Pro users
-    let renewalDate = null;
-    if (isActive && data.updatedAt) {
-      const subscriptionStart = data.updatedAt.toDate();
-      const daysToAdd = plan === "annual" ? 365 : 30;
-      renewalDate = new Date(subscriptionStart.getTime() + (daysToAdd * 24 * 60 * 60 * 1000));
+    const customer = customers.data[0];
+    console.log("✅ Found Stripe customer:", customer.id);
+    
+    // Get active subscriptions
+    const subscriptions = await stripeClient.subscriptions.list({
+      customer: customer.id,
+      status: 'all',
+      limit: 10,
+    });
+    
+    // Find active or trialing subscription
+    const activeSub = subscriptions.data.find(
+      sub => sub.status === 'active' || sub.status === 'trialing'
+    );
+    
+    if (!activeSub) {
+      console.log("❌ No active subscription for customer", customer.id);
+      return res.status(200).json({
+        active: false,
+        plan: "free",
+        status: "canceled",
+        unlimited: false,
+        customerId: customer.id,
+        email: email,
+        uid: uid,
+      });
     }
-
-    console.log("✅ Subscription check for", uid || email, ":", status, plan);
+    
+    // Extract plan details
+    const priceId = activeSub.items.data[0].price.id;
+    const planType = priceId.includes('annual') ? 'annual' : 'monthly';
+    const periodEnd = activeSub.current_period_end;
+    
+    console.log("✅ Active subscription found:", activeSub.id, planType);
+    
+    // Update Firestore cache
+    await db.collection("user_subscription_status").doc(email).set({
+      status: "active",
+      plan: planType,
+      customerId: customer.id,
+      subscriptionId: activeSub.id,
+      updatedAt: admin.firestore.Timestamp.now(),
+      unlimited: true,
+    }, { merge: true });
+    
     return res.status(200).json({
-      active: isActive,
-      plan: plan,
-      plan_type: plan, // For dashboard compatibility
-      status: status,
-      unlimited: isActive, // Pro users get unlimited audits
-      renewal_date: renewalDate,
-      period_end: renewalDate ? Math.floor(renewalDate.getTime() / 1000) : null,
-      customerId: data.customerId || null, // Stripe customer ID for portal
-      last_updated: data.last_updated || null,
+      active: true,
+      plan: planType,
+      plan_type: planType,
+      status: activeSub.status,
+      unlimited: true,
+      renewal_date: new Date(periodEnd * 1000),
+      period_end: periodEnd,
+      customerId: customer.id,
+      subscriptionId: activeSub.id,
       email: email,
       uid: uid,
+      source: "stripe",
     });
   } catch (error) {
     console.error("❌ Error checking subscription:", error);
@@ -760,4 +808,410 @@ This is an automated confirmation. Please do not reply to this email.
         return {success: false, error: error.message};
       }
     },
+);
+
+// ✅ Gemini Proxy (CORS-safe, handles browser restrictions)
+exports.geminiProxy = onRequest(
+    {
+      timeoutSeconds: 60,
+      memory: "512MiB",
+      region: "us-central1",
+      invoker: "public",
+    },
+    async (req, res) => {
+      // CORS headers
+      res.set("Access-Control-Allow-Origin", "*");
+      res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+      res.set("Access-Control-Allow-Headers", "Content-Type");
+
+      if (req.method === "OPTIONS") {
+        return res.status(204).send("");
+      }
+
+      try {
+        const { apiKey, text } = req.body;
+        
+        if (!apiKey || !text) {
+          return res.status(400).json({ 
+            ok: false, 
+            reason: "Missing apiKey or text" 
+          });
+        }
+
+        const startTime = Date.now();
+        const fetch = (await import("node-fetch")).default;
+
+        // Helper function to call Gemini models
+        const callGemini = async (modelName) => {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+          const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text }] }]
+            })
+          });
+          const data = await response.json();
+          return { response, data, modelName };
+        };
+
+        // 1️⃣ Try Flash model first
+        let { response, data, modelName } = await callGemini("gemini-1.5-flash-latest");
+
+        // 2️⃣ Fallback to Pro if Flash fails
+        if (!response.ok) {
+          console.warn(`⚠️ ${modelName} failed (${response.status}) — trying gemini-1.5-pro-latest`);
+          ({ response, data, modelName } = await callGemini("gemini-1.5-pro-latest"));
+        }
+
+        // 3️⃣ Handle API errors gracefully
+        if (!response.ok) {
+          console.error("Gemini API error:", data);
+          const errorMsg = data.error?.message || "Gemini request failed";
+          return res.status(response.status).json({
+            ok: false,
+            status: response.status,
+            reason: errorMsg,
+            details: JSON.stringify(data).slice(0, 400)
+          });
+        }
+
+        // 4️⃣ Extract text cleanly
+        const summary = data?.candidates?.[0]?.content?.parts?.[0]?.text || "[No summary returned]";
+        const latency = Date.now() - startTime;
+
+        return res.status(200).json({
+          ok: true,
+          summary,
+          model: modelName,
+          latency,
+          provider: "Gemini",
+          endpoint: "via Proxy"
+        });
+      } catch (err) {
+        console.error("❌ Gemini proxy fatal error:", err);
+        return res.status(500).json({ 
+          ok: false, 
+          reason: err.message 
+        });
+      }
+    }
+);
+
+// ✅ Universal Summarization Proxy (CORS-safe, all providers)
+exports.universalSummarize = onRequest(
+    {
+      timeoutSeconds: 60,
+      memory: "512MiB",
+      region: "us-central1",
+      invoker: "public",
+    },
+    async (req, res) => {
+      // CORS headers
+      res.set("Access-Control-Allow-Origin", "*");
+      res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+      res.set("Access-Control-Allow-Headers", "Content-Type");
+
+      if (req.method === "OPTIONS") {
+        return res.status(204).send("");
+      }
+
+      try {
+        const { apiKey, provider, text } = req.body;
+        
+        if (!apiKey || !text) {
+          return res.status(400).json({ 
+            ok: false, 
+            reason: "Missing API key or text" 
+          });
+        }
+
+        let endpoint = "";
+        let headers = {};
+        let payload = {};
+        let model = "";
+
+        // --- Provider Routing ---
+        switch (provider) {
+          case "OpenRouter":
+            endpoint = "https://openrouter.ai/api/v1/chat/completions";
+            model = "openai/gpt-4o-mini";
+            headers = {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${apiKey}`,
+              "HTTP-Referer": "https://echomind-pro-launch.vercel.app/",
+              "X-Title": "EchoMind Pro"
+            };
+            payload = {
+              model: model,
+              messages: [
+                { role: "system", content: "You are an expert summarizer. Provide concise, clear summaries." },
+                { role: "user", content: text }
+              ]
+            };
+            break;
+
+          case "OpenAI":
+            endpoint = "https://api.openai.com/v1/chat/completions";
+            model = "gpt-4o-mini";
+            headers = {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${apiKey}`
+            };
+            payload = {
+              model: model,
+              messages: [
+                { role: "system", content: "You are an expert summarizer. Provide concise, clear summaries." },
+                { role: "user", content: text }
+              ]
+            };
+            break;
+
+          case "Claude":
+            endpoint = "https://api.anthropic.com/v1/messages";
+            model = "claude-3-5-sonnet-20241022";
+            headers = {
+              "Content-Type": "application/json",
+              "x-api-key": apiKey,
+              "anthropic-version": "2023-06-01"
+            };
+            payload = {
+              model: model,
+              max_tokens: 1024,
+              messages: [
+                { role: "user", content: `Summarize this text concisely:\n\n${text}` }
+              ]
+            };
+            break;
+
+          case "Mistral":
+          case "Mistral AI":
+          case "Mistral AI (New Format)":
+            endpoint = "https://api.mistral.ai/v1/chat/completions";
+            model = "mistral-medium-latest";
+            headers = {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${apiKey}`
+            };
+            payload = {
+              model: model,
+              messages: [
+                { role: "system", content: "You are an expert summarizer. Provide concise, clear summaries." },
+                { role: "user", content: text }
+              ]
+            };
+            break;
+
+          case "Gemini":
+          case "Google Gemini":
+            endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+            model = "gemini-pro";
+            headers = { "Content-Type": "application/json" };
+            payload = {
+              contents: [
+                {
+                  parts: [
+                    { text: `Summarize this text concisely:\n\n${text}` }
+                  ]
+                }
+              ]
+            };
+            break;
+
+          default:
+            return res.status(400).json({ 
+              ok: false, 
+              reason: `Unknown provider: ${provider}` 
+            });
+        }
+
+        // --- Perform summarization with latency tracking ---
+        const startTime = Date.now();
+        const fetch = (await import("node-fetch")).default;
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload)
+        });
+        const latency = Date.now() - startTime;
+
+        const status = response.status;
+        const data = await response.json();
+
+        if (!response.ok) {
+          return res.json({
+            ok: false,
+            status,
+            provider,
+            model,
+            latency,
+            reason: `Error ${status} - ${response.statusText}`,
+            error: data
+          });
+        }
+
+        // --- Extract summary from provider-specific response ---
+        let summary = "";
+        if (data.choices && data.choices[0]?.message?.content) {
+          // OpenAI, OpenRouter, Mistral format
+          summary = data.choices[0].message.content;
+        } else if (data.content && data.content[0]?.text) {
+          // Claude format
+          summary = data.content[0].text;
+        } else if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+          // Gemini format
+          summary = data.candidates[0].content.parts[0].text;
+        } else {
+          summary = "Unable to extract summary from response";
+        }
+
+        // --- Return success with telemetry ---
+        res.json({
+          ok: true,
+          status,
+          provider,
+          model,
+          endpoint,
+          latency,
+          summary: summary.trim(),
+          reason: "Summary generated successfully"
+        });
+
+      } catch (err) {
+        console.error("Universal Summarize error:", err);
+        res.status(500).json({ 
+          ok: false, 
+          reason: "Server error - unable to generate summary",
+          error: err.message
+        });
+      }
+    }
+);
+
+// ✅ Universal API Key Validator (CORS-safe proxy)
+exports.validateKey = onRequest(
+    {
+      timeoutSeconds: 30,
+      memory: "256MiB",
+      region: "us-central1",
+      invoker: "public",
+    },
+    async (req, res) => {
+      // CORS headers
+      res.set("Access-Control-Allow-Origin", "*");
+      res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+      res.set("Access-Control-Allow-Headers", "Content-Type");
+
+      if (req.method === "OPTIONS") {
+        return res.status(204).send("");
+      }
+
+      try {
+        const { apiKey } = req.body;
+        
+        if (!apiKey) {
+          return res.status(400).json({ 
+            ok: false, 
+            reason: "Missing API key" 
+          });
+        }
+
+        let provider = "Unknown";
+        let endpoint = "";
+        let headers = {};
+
+        // --- Detect provider from key format ---
+        if (apiKey.startsWith("sk-or-")) {
+          provider = "OpenRouter";
+          endpoint = "https://openrouter.ai/api/v1/models";
+          headers = {
+            "Authorization": `Bearer ${apiKey}`,
+            "HTTP-Referer": "https://echomind-pro-launch.vercel.app/",
+            "X-Title": "EchoMind Pro"
+          };
+        } else if (apiKey.startsWith("sk-ant-")) {
+          provider = "Claude";
+          endpoint = "https://api.anthropic.com/v1/models";
+          headers = { 
+            "x-api-key": apiKey, 
+            "anthropic-version": "2023-06-01" 
+          };
+        } else if (/^(mistral-[A-Za-z0-9]{16,}|[A-Za-z0-9]{32,40})$/.test(apiKey)) {
+          provider = "Mistral";
+          endpoint = "https://api.mistral.ai/v1/models";
+          headers = { 
+            "Authorization": `Bearer ${apiKey}` 
+          };
+        } else if (apiKey.startsWith("sk-")) {
+          provider = "OpenAI";
+          endpoint = "https://api.openai.com/v1/models";
+          headers = { 
+            "Authorization": `Bearer ${apiKey}` 
+          };
+        } else if (apiKey.startsWith("AIza")) {
+          provider = "Gemini";
+          endpoint = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+          headers = {};
+        }
+
+        if (provider === "Unknown") {
+          return res.status(400).json({ 
+            ok: false, 
+            reason: "Unrecognized key format" 
+          });
+        }
+
+        // --- Perform validation ping with latency tracking ---
+        const startTime = Date.now();
+        const fetch = (await import("node-fetch")).default;
+        const response = await fetch(endpoint, { 
+          method: "GET",
+          headers 
+        });
+        const latency = Date.now() - startTime;
+
+        const valid = response.ok;
+        const status = response.status;
+
+        // --- Try to get model count ---
+        let modelCount = 0;
+        if (valid) {
+          try {
+            const data = await response.json();
+            if (data.data && Array.isArray(data.data)) {
+              // OpenAI, OpenRouter format
+              modelCount = data.data.length;
+            } else if (data.models && Array.isArray(data.models)) {
+              // Gemini format
+              modelCount = data.models.length;
+            } else if (Array.isArray(data)) {
+              // Some APIs return array directly
+              modelCount = data.length;
+            }
+          } catch (err) {
+            console.warn("Could not parse model list:", err);
+          }
+        }
+
+        // --- Return validation result ---
+        res.json({
+          ok: valid,
+          status,
+          provider,
+          endpoint,
+          latency,
+          modelCount,
+          reason: valid 
+            ? `Key validated successfully` 
+            : `Error ${status} - ${response.statusText}`
+        });
+
+      } catch (err) {
+        console.error("Validation error:", err);
+        res.status(500).json({ 
+          ok: false, 
+          reason: "Server error - unable to validate key" 
+        });
+      }
+    }
 );

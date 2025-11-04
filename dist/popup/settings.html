@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EchoMind Pro Settings</title>
+  <link rel="stylesheet" href="../popup.css" />
+  <style>
+    body {
+      width: 400px;
+      min-height: 500px;
+      padding: 20px;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #e6e6f7;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .settings-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    h2 {
+      margin: 0 0 10px 0;
+      font-size: 24px;
+      background: linear-gradient(90deg, #5EEAD4, #3B82F6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .setting-group {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(94, 234, 212, 0.2);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #94a3b8;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input[type="password"],
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(94, 234, 212, 0.3);
+      background: rgba(15, 23, 42, 0.8);
+      color: #fff;
+      font-size: 14px;
+      font-family: 'Courier New', monospace;
+    }
+
+    input[type="password"]:focus,
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #5EEAD4;
+      box-shadow: 0 0 0 3px rgba(94, 234, 212, 0.1);
+    }
+
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 48px;
+      height: 24px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #334155;
+      transition: 0.3s;
+      border-radius: 24px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .toggle-slider {
+      background: linear-gradient(90deg, #5EEAD4, #3B82F6);
+    }
+
+    input:checked + .toggle-slider:before {
+      transform: translateX(24px);
+    }
+
+    .toggle-label {
+      font-size: 14px;
+      color: #cbd5e1;
+    }
+
+    .save-button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(90deg, #5EEAD4, #3B82F6);
+      color: #0f172a;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .save-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(94, 234, 212, 0.4);
+    }
+
+    .save-button:active {
+      transform: translateY(0);
+    }
+
+    .status-message {
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      display: none;
+    }
+
+    .status-message.success {
+      background: rgba(34, 197, 94, 0.2);
+      border: 1px solid rgba(34, 197, 94, 0.4);
+      color: #4ade80;
+      display: block;
+    }
+
+    .status-message.error {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #f87171;
+      display: block;
+    }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 16px;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .back-link:hover {
+      color: #5EEAD4;
+    }
+
+    .info-text {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    .key-display {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .toggle-visibility {
+      padding: 6px 12px;
+      border: 1px solid rgba(94, 234, 212, 0.3);
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.8);
+      color: #5EEAD4;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .toggle-visibility:hover {
+      background: rgba(94, 234, 212, 0.1);
+    }
+    .key-link {
+      background: linear-gradient(90deg, #2563eb, #7c3aed);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: opacity 0.2s, transform 0.2s;
+      display: inline-block;
+    }
+    .key-link:hover {
+      opacity: 0.8;
+      transform: translateY(-1px);
+    }
+    #test-result {
+      transition: color 0.4s ease, transform 0.4s ease;
+    }
+    #test-result.success {
+      color: #4ade80;
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="settings-container">
+    <h2>⚙️ Settings</h2>
+
+    <div class="setting-group">
+      <label for="openai-key">AI API Key (Universal)</label>
+      <div class="key-display">
+        <input 
+          id="openai-key" 
+          type="password" 
+          placeholder="sk-... or sk-ant-... or mistral-... or AIza..." 
+          autocomplete="off"
+        />
+        <button class="toggle-visibility" id="toggleKeyVisibility">Show</button>
+      </div>
+      <div id="providerDetection" style="margin-top: 8px; font-size: 13px; color: #5EEAD4; font-weight: 600;"></div>
+      <p id="provider-detect" style="
+        font-size: 14px;
+        margin-top: 8px;
+        color: #9ca3af;
+        text-align: center;
+        transition: color 0.3s ease;
+        font-weight: 600;
+      ">
+        Waiting for key input...
+      </p>
+      
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px;">
+        <a href="https://platform.openai.com/api-keys" target="_blank" class="key-link">🔑 OpenAI</a>
+        <a href="https://openrouter.ai/keys" target="_blank" class="key-link">🌐 OpenRouter</a>
+        <a href="https://console.anthropic.com/settings/keys" target="_blank" class="key-link">🤖 Claude</a>
+        <a href="https://console.mistral.ai/api-keys/" target="_blank" class="key-link">💨 Mistral</a>
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" class="key-link">☁️ Gemini</a>
+      </div>
+      
+      <p class="info-text" style="margin-top: 12px;">
+        🔒 Your key is securely stored on your device only and shared across all EchoMind pages automatically.
+      </p>
+    </div>
+
+    <div class="setting-group">
+      <div class="toggle-container">
+        <label class="toggle-switch">
+          <input type="checkbox" id="enable-cloud" />
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="toggle-label">Enable Deep Summarization (API Mode)</span>
+      </div>
+      <p class="info-text">
+        When enabled, EchoMind uses your connected API (OpenRouter, OpenAI, Claude, Gemini, etc.) for high-accuracy cloud summaries instead of the local Chrome AI engine.
+      </p>
+    </div>
+
+    <div class="setting-group">
+      <div class="toggle-container">
+        <label class="toggle-switch">
+          <input type="checkbox" id="show-debug" />
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="toggle-label">Show Forge Trace HUD</span>
+      </div>
+      <p class="info-text">
+        Display real-time telemetry (endpoint, latency, status) below summaries. Useful for debugging and monitoring AI performance.
+      </p>
+    </div>
+
+    <div class="setting-group">
+      <div class="toggle-container">
+        <label class="toggle-switch">
+          <input type="checkbox" id="compact-hud" />
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="toggle-label">Compact HUD Mode</span>
+      </div>
+      <p class="info-text">
+        Show minimal telemetry (just model name and latency) instead of full trace details. Cleaner for end users.
+      </p>
+    </div>
+
+    <button class="save-button" id="saveSettings">💾 Save Settings</button>
+    
+    <button id="test-key" style="
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(90deg, #22d3ee, #3b82f6);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      margin-top: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    ">
+      🔍 Validate API Connection
+    </button>
+
+    <p id="test-result" style="
+      text-align: center;
+      font-size: 14px;
+      margin-top: 12px;
+      color: #9ca3af;
+      font-family: Inter, sans-serif;
+      font-weight: 600;
+    "></p>
+
+    <div class="status-message" id="statusMessage"></div>
+
+    <a class="back-link" id="backToDashboard">← Back to Dashboard</a>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>
